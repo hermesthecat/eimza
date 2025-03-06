@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Veritabanı Yapılandırması
  * @author A. Kerem Gök
@@ -17,4 +18,4 @@ ini_set('display_errors', 1);
 define('DEBUG_MODE', true);
 
 // Zaman dilimi ayarı
-date_default_timezone_set('Europe/Istanbul'); 
+date_default_timezone_set('Europe/Istanbul');
