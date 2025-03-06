@@ -218,6 +218,59 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             margin: 10px 0;
             display: none;
         }
+
+        .upload-progress {
+            margin-top: 10px;
+            background: #f5f5f5;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 20px;
+            background: #4CAF50;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            display: block;
+            text-align: center;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            margin-bottom: 10px;
+        }
+
+        .pdf-file-input {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px dashed #ddd;
+            border-radius: 3px;
+            background: #fff;
+        }
+
+        .pdf-file-input:hover {
+            border-color: #4CAF50;
+        }
+
+        input[type="file"] {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .btn-group {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
     </style>
 </head>
 
@@ -236,10 +289,28 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             $signUrl = $kolayImza->createSignUrl($pdfUrl, $responseUrl);
             ?>
             <div class="form-group">
+                <label>PDF Seçeneği:</label>
+                <select id="pdf-source-single" class="form-control" onchange="togglePdfSource('single')">
+                    <option value="url">URL Gir</option>
+                    <option value="file">Dosya Yükle</option>
+                </select>
+            </div>
+
+            <div id="url-input-single" class="form-group">
                 <label for="single-pdf">PDF URL'i:</label>
                 <input type="text" id="single-pdf" value="<?php echo htmlspecialchars($pdfUrl); ?>">
             </div>
-            <a href="<?php echo htmlspecialchars($signUrl); ?>" class="btn imzala">PDF'i İmzala</a>
+
+            <div id="file-input-single" class="form-group" style="display:none;">
+                <label for="single-pdf-file">PDF Dosyası:</label>
+                <input type="file" id="single-pdf-file" accept=".pdf">
+                <div class="upload-progress" style="display:none;">
+                    <div class="progress-bar"></div>
+                    <span class="progress-text">Yükleniyor... 0%</span>
+                </div>
+            </div>
+
+            <button class="btn imzala" onclick="handleSingleSign()">PDF'i İmzala</button>
         </div>
 
         <h2>Tekli İmza Kayıtları</h2>
@@ -276,12 +347,31 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
     <div id="coklu" class="tab-content">
         <div class="content-box">
             <form method="post" action="kolayimza.php" id="multiSignForm">
+                <div class="form-group">
+                    <label>PDF Ekleme Yöntemi:</label>
+                    <select id="pdf-source-multi" class="form-control" onchange="togglePdfSource('multi')">
+                        <option value="url">URL Gir</option>
+                        <option value="file">Dosya Yükle</option>
+                    </select>
+                </div>
+
                 <div id="pdfUrls">
                     <div class="pdf-input">
                         <input type="text" name="pdf_urls[]" placeholder="PDF URL'i" required>
+                        <button type="button" onclick="this.parentElement.remove()">Sil</button>
                     </div>
                 </div>
-                <button type="button" class="btn" onclick="addPdfInput()">+ PDF Ekle</button>
+
+                <div id="pdfFiles" style="display:none;">
+                    <div class="pdf-file-input">
+                        <input type="file" name="pdf_files[]" accept=".pdf">
+                        <button type="button" onclick="this.parentElement.remove()">Sil</button>
+                        <div class="upload-progress" style="display:none;">
+                            <div class="progress-bar"></div>
+                            <span class="progress-text">Yükleniyor... 0%</span>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="form-group">
                     <label for="grup-adi">Grup Adı:</label>
@@ -295,7 +385,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
                 <div class="error-message" id="errorMessage"></div>
 
-                <button type="submit" class="btn">Toplu İmzala</button>
+                <button type="button" class="btn" onclick="addInput()">+ PDF Ekle</button>
             </form>
         </div>
     </div>
@@ -396,6 +486,26 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             event.target.classList.add('active');
         }
 
+        function togglePdfSource(type) {
+            const source = document.getElementById(`pdf-source-${type}`).value;
+            if (type === 'single') {
+                document.getElementById('url-input-single').style.display = source === 'url' ? 'block' : 'none';
+                document.getElementById('file-input-single').style.display = source === 'file' ? 'block' : 'none';
+            } else {
+                document.getElementById('pdfUrls').style.display = source === 'url' ? 'block' : 'none';
+                document.getElementById('pdfFiles').style.display = source === 'file' ? 'block' : 'none';
+            }
+        }
+
+        function addInput() {
+            const source = document.getElementById('pdf-source-multi').value;
+            if (source === 'url') {
+                addPdfInput();
+            } else {
+                addFileInput();
+            }
+        }
+
         function addPdfInput() {
             const div = document.createElement('div');
             div.className = 'pdf-input';
@@ -406,28 +516,126 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             document.getElementById('pdfUrls').appendChild(div);
         }
 
-        document.getElementById('multiSignForm').onsubmit = function(e) {
+        function addFileInput() {
+            const div = document.createElement('div');
+            div.className = 'pdf-file-input';
+            div.innerHTML = `
+                <input type="file" name="pdf_files[]" accept=".pdf">
+                <button type="button" onclick="this.parentElement.remove()">Sil</button>
+                <div class="upload-progress" style="display:none;">
+                    <div class="progress-bar"></div>
+                    <span class="progress-text">Yükleniyor... 0%</span>
+                </div>
+            `;
+            document.getElementById('pdfFiles').appendChild(div);
+        }
+
+        async function uploadFile(file, progressElement) {
+            const formData = new FormData();
+            formData.append('pdf_file', file);
+
+            try {
+                const response = await fetch('upload.php', {
+                    method: 'POST',
+                    body: formData,
+                    onUploadProgress: (progressEvent) => {
+                        const progress = (progressEvent.loaded / progressEvent.total) * 100;
+                        progressElement.querySelector('.progress-bar').style.width = progress + '%';
+                        progressElement.querySelector('.progress-text').textContent = `Yükleniyor... ${Math.round(progress)}%`;
+                    }
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    return result.url;
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                throw new Error('Dosya yükleme hatası: ' + error.message);
+            }
+        }
+
+        async function handleSingleSign() {
+            const source = document.getElementById('pdf-source-single').value;
+            let pdfUrl;
+
+            try {
+                if (source === 'url') {
+                    pdfUrl = document.getElementById('single-pdf').value;
+                } else {
+                    const fileInput = document.getElementById('single-pdf-file');
+                    if (!fileInput.files.length) {
+                        throw new Error('Lütfen bir PDF dosyası seçin');
+                    }
+
+                    const progressElement = fileInput.parentElement.querySelector('.upload-progress');
+                    progressElement.style.display = 'block';
+
+                    pdfUrl = await uploadFile(fileInput.files[0], progressElement);
+                }
+
+                const response = await fetch('kolayimza.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `pdf_url=${encodeURIComponent(pdfUrl)}`
+                });
+
+                const data = await response.json();
+                if (data.success && data.signUrl) {
+                    window.location.href = data.signUrl;
+                } else {
+                    throw new Error(data.message || 'Bir hata oluştu');
+                }
+            } catch (error) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        document.getElementById('multiSignForm').onsubmit = async function(e) {
             e.preventDefault();
-            const formData = new FormData(this);
+            const formData = new FormData();
+            const source = document.getElementById('pdf-source-multi').value;
             const errorDiv = document.getElementById('errorMessage');
 
-            fetch('kolayimza.php', {
+            try {
+                if (source === 'url') {
+                    const urls = Array.from(this.querySelectorAll('input[name="pdf_urls[]"]')).map(input => input.value);
+                    urls.forEach(url => formData.append('pdf_urls[]', url));
+                } else {
+                    const fileInputs = this.querySelectorAll('input[type="file"]');
+                    for (const input of fileInputs) {
+                        if (input.files.length) {
+                            const progressElement = input.parentElement.querySelector('.upload-progress');
+                            progressElement.style.display = 'block';
+                            const url = await uploadFile(input.files[0], progressElement);
+                            formData.append('pdf_urls[]', url);
+                        }
+                    }
+                }
+
+                formData.append('grup_adi', this.querySelector('[name="grup_adi"]').value);
+                formData.append('aciklama', this.querySelector('[name="aciklama"]').value);
+
+                const response = await fetch('kolayimza.php', {
                     method: 'POST',
                     body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.signUrl) {
-                        window.location.href = data.signUrl;
-                    } else {
-                        errorDiv.textContent = data.message || 'Bir hata oluştu';
-                        errorDiv.style.display = 'block';
-                    }
-                })
-                .catch(error => {
-                    errorDiv.textContent = 'Sunucu hatası oluştu';
-                    errorDiv.style.display = 'block';
                 });
+
+                const data = await response.json();
+                if (data.success && data.signUrl) {
+                    window.location.href = data.signUrl;
+                } else {
+                    throw new Error(data.message || 'Bir hata oluştu');
+                }
+            } catch (error) {
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            }
         };
     </script>
 </body>
