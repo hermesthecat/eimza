@@ -30,213 +30,309 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 <head>
     <title>KolayImza PDF İmzalama</title>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
-    <h1>PDF İmzalama</h1>
-
-    <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('tekli')">Tekli İmzalama</button>
-        <button class="tab-btn" onclick="showTab('coklu')">Çoklu İmzalama</button>
-        <button class="tab-btn" onclick="showTab('gruplar')">İmza Grupları</button>
-    </div>
-
-    <div id="tekli" class="tab-content active">
-        <div class="content-box">
-            <?php
-            $signUrl = $kolayImza->createSignUrl($pdfUrl, $responseUrl);
-            ?>
-            <div class="form-group">
-                <label>PDF Seçeneği:</label>
-                <select id="pdf-source-single" class="form-control" onchange="togglePdfSource('single')">
-                    <option value="url">URL Gir</option>
-                    <option value="file">Dosya Yükle</option>
-                </select>
-            </div>
-
-            <div id="url-input-single" class="form-group">
-                <label for="single-pdf">PDF URL'i:</label>
-                <input type="text" id="single-pdf" value="<?php echo htmlspecialchars($pdfUrl); ?>">
-            </div>
-
-            <div id="file-input-single" class="form-group" style="display:none;">
-                <label for="single-pdf-file">PDF Dosyası:</label>
-                <input type="file" id="single-pdf-file" accept=".pdf">
-                <div class="upload-progress" style="display:none;">
-                    <div class="progress-bar"></div>
-                    <span class="progress-text">Yükleniyor... 0%</span>
-                </div>
-            </div>
-
-            <button class="btn imzala" onclick="handleSingleSign()">PDF'i İmzala</button>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-file-signature me-2"></i>
+                KolayImza
+            </a>
         </div>
+    </nav>
 
-        <h2>Tekli İmza Kayıtları</h2>
-        <div class="content-box">
-            <table>
-                <tr>
-                    <th>ID</th>
-                    <th>Belge URL</th>
-                    <th>İmzalayan</th>
-                    <th>Kurum</th>
-                    <th>İmza Zamanı</th>
-                    <th>Durum</th>
-                    <th>İşlemler</th>
-                </tr>
-                <?php foreach ($kolayImza->listSignRecords() as $record): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($record['id']); ?></td>
-                        <td><?php echo htmlspecialchars($record['belge_url']); ?></td>
-                        <td><?php echo htmlspecialchars($record['sertifika_sahibi']); ?></td>
-                        <td><?php echo htmlspecialchars($record['sertifika_kurumu']); ?></td>
-                        <td><?php echo htmlspecialchars($record['imza_zamani']); ?></td>
-                        <td class="<?php echo $record['durum'] === 'imzalandi' ? 'success' : ($record['durum'] === 'hata' ? 'error' : 'pending'); ?>">
-                            <?php echo htmlspecialchars($record['durum']); ?>
-                        </td>
-                        <td>
-                            <a href="?history_id=<?php echo $record['id']; ?>" class="history-btn">Geçmiş</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </table>
-        </div>
-    </div>
+    <div class="container">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tekli" type="button">
+                            <i class="fas fa-file-pdf me-2"></i>Tekli İmzalama
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#coklu" type="button">
+                            <i class="fas fa-files me-2"></i>Çoklu İmzalama
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#gruplar" type="button">
+                            <i class="fas fa-folder me-2"></i>İmza Grupları
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content">
+                    <div class="tab-pane fade show active" id="tekli">
+                        <div class="mb-4">
+                            <div class="form-group mb-3">
+                                <label class="form-label">PDF Seçeneği:</label>
+                                <select id="pdf-source-single" class="form-select" onchange="togglePdfSource('single')">
+                                    <option value="url">URL Gir</option>
+                                    <option value="file">Dosya Yükle</option>
+                                </select>
+                            </div>
 
-    <div id="coklu" class="tab-content">
-        <div class="content-box">
-            <form method="post" action="kolayimza.php" id="multiSignForm">
-                <div class="form-group">
-                    <label>PDF Ekleme Yöntemi:</label>
-                    <select id="pdf-source-multi" class="form-control" onchange="togglePdfSource('multi')">
-                        <option value="url">URL Gir</option>
-                        <option value="file">Dosya Yükle</option>
-                    </select>
-                </div>
+                            <div id="url-input-single" class="form-group mb-3">
+                                <label class="form-label" for="single-pdf">PDF URL'i:</label>
+                                <input type="text" id="single-pdf" class="form-control" value="<?php echo htmlspecialchars($pdfUrl); ?>">
+                            </div>
 
-                <div id="pdfUrls">
-                    <div class="pdf-input">
-                        <input type="text" name="pdf_urls[]" placeholder="PDF URL'i" required>
-                        <button type="button" onclick="this.parentElement.remove()">Sil</button>
+                            <div id="file-input-single" class="form-group mb-3" style="display:none;">
+                                <label class="form-label" for="single-pdf-file">PDF Dosyası:</label>
+                                <input type="file" id="single-pdf-file" class="form-control" accept=".pdf">
+                                <div class="upload-progress mt-2" style="display:none;">
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
+                                    </div>
+                                    <small class="text-muted progress-text mt-1 d-block">Yükleniyor... 0%</small>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-primary" onclick="handleSingleSign()">
+                                <i class="fas fa-signature me-2"></i>PDF'i İmzala
+                            </button>
+                        </div>
+
+                        <h5 class="mb-3">Tekli İmza Kayıtları</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Belge URL</th>
+                                        <th>İmzalayan</th>
+                                        <th>Kurum</th>
+                                        <th>İmza Zamanı</th>
+                                        <th>Durum</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($kolayImza->listSignRecords() as $record): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($record['id']); ?></td>
+                                            <td class="text-truncate" style="max-width: 200px;"><?php echo htmlspecialchars($record['belge_url']); ?></td>
+                                            <td><?php echo htmlspecialchars($record['sertifika_sahibi']); ?></td>
+                                            <td><?php echo htmlspecialchars($record['sertifika_kurumu']); ?></td>
+                                            <td><?php echo htmlspecialchars($record['imza_zamani']); ?></td>
+                                            <td>
+                                                <span class="badge <?php echo $record['durum'] === 'imzalandi' ? 'bg-success' : ($record['durum'] === 'hata' ? 'bg-danger' : 'bg-warning'); ?>">
+                                                    <?php echo htmlspecialchars($record['durum']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="?history_id=<?php echo $record['id']; ?>" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-history"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
 
-                <div id="pdfFiles" style="display:none;">
-                    <div class="pdf-file-input">
-                        <input type="file" name="pdf_files[]" accept=".pdf">
-                        <button type="button" onclick="this.parentElement.remove()">Sil</button>
-                        <div class="upload-progress" style="display:none;">
-                            <div class="progress-bar"></div>
-                            <span class="progress-text">Yükleniyor... 0%</span>
+                    <div class="tab-pane fade" id="coklu">
+                        <form id="multiSignForm" class="mb-4">
+                            <div class="form-group mb-3">
+                                <label class="form-label">PDF Ekleme Yöntemi:</label>
+                                <select id="pdf-source-multi" class="form-select" onchange="togglePdfSource('multi')">
+                                    <option value="url">URL Gir</option>
+                                    <option value="file">Dosya Yükle</option>
+                                </select>
+                            </div>
+
+                            <div id="pdfUrls">
+                                <div class="pdf-input input-group mb-3">
+                                    <input type="text" name="pdf_urls[]" class="form-control" placeholder="PDF URL'i" required>
+                                    <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="pdfFiles" style="display:none;">
+                                <div class="pdf-file-input mb-3">
+                                    <div class="input-group">
+                                        <input type="file" name="pdf_files[]" class="form-control" accept=".pdf">
+                                        <button type="button" class="btn btn-danger" onclick="this.parentElement.parentElement.remove()">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="upload-progress mt-2" style="display:none;">
+                                        <div class="progress">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
+                                        </div>
+                                        <small class="text-muted progress-text mt-1 d-block">Yükleniyor... 0%</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label" for="grup-adi">Grup Adı:</label>
+                                <input type="text" id="grup-adi" name="grup_adi" class="form-control" placeholder="Grup Adı (Opsiyonel)">
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label" for="aciklama">Açıklama:</label>
+                                <textarea id="aciklama" name="aciklama" class="form-control" placeholder="Açıklama (Opsiyonel)" rows="3"></textarea>
+                            </div>
+
+                            <div class="alert alert-danger" id="errorMessage" style="display:none;"></div>
+
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-success" onclick="addInput()">
+                                    <i class="fas fa-plus me-2"></i>PDF Ekle
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-signature me-2"></i>Toplu İmzala
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="tab-pane fade" id="gruplar">
+                        <h5 class="mb-3">İmza Grupları</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Grup Adı</th>
+                                        <th>Toplam Belge</th>
+                                        <th>İmzalanan</th>
+                                        <th>Durum</th>
+                                        <th>Oluşturma Zamanı</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($kolayImza->listSignGroups() as $group): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($group['id']); ?></td>
+                                            <td><?php echo htmlspecialchars($group['grup_adi']); ?></td>
+                                            <td><?php echo htmlspecialchars($group['toplam_belge']); ?></td>
+                                            <td><?php echo htmlspecialchars($group['imzalanan_belge']); ?></td>
+                                            <td>
+                                                <span class="badge bg-<?php
+                                                                        echo $group['durum'] === 'tamamlandi' ? 'success' : ($group['durum'] === 'bekliyor' ? 'warning' : ($group['durum'] === 'kismen_tamamlandi' ? 'info' : 'danger'));
+                                                                        ?>">
+                                                    <?php echo htmlspecialchars($group['durum']); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($group['olusturma_zamani']); ?></td>
+                                            <td>
+                                                <a href="?group_detail=<?php echo $group['id']; ?>" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="grup-adi">Grup Adı:</label>
-                    <input type="text" id="grup-adi" name="grup_adi" placeholder="Grup Adı (Opsiyonel)">
-                </div>
-
-                <div class="form-group">
-                    <label for="aciklama">Açıklama:</label>
-                    <textarea id="aciklama" name="aciklama" placeholder="Açıklama (Opsiyonel)"></textarea>
-                </div>
-
-                <div class="error-message" id="errorMessage"></div>
-
-                <button type="button" class="btn" onclick="addInput()">+ PDF Ekle</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="gruplar" class="tab-content">
-        <h2>İmza Grupları</h2>
-        <div class="content-box">
-            <table>
-                <tr>
-                    <th>ID</th>
-                    <th>Grup Adı</th>
-                    <th>Toplam Belge</th>
-                    <th>İmzalanan</th>
-                    <th>Durum</th>
-                    <th>Oluşturma Zamanı</th>
-                    <th>İşlemler</th>
-                </tr>
-                <?php foreach ($kolayImza->listSignGroups() as $group): ?>
-                    <tr>
-                        <td><?php echo htmlspecialchars($group['id']); ?></td>
-                        <td><?php echo htmlspecialchars($group['grup_adi']); ?></td>
-                        <td><?php echo htmlspecialchars($group['toplam_belge']); ?></td>
-                        <td><?php echo htmlspecialchars($group['imzalanan_belge']); ?></td>
-                        <td>
-                            <span class="group-status status-<?php echo htmlspecialchars($group['durum']); ?>">
-                                <?php echo htmlspecialchars($group['durum']); ?>
-                            </span>
-                        </td>
-                        <td><?php echo htmlspecialchars($group['olusturma_zamani']); ?></td>
-                        <td>
-                            <a href="?group_detail=<?php echo $group['id']; ?>" class="history-btn">Detay</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </table>
+            </div>
         </div>
     </div>
 
     <?php if ($history): ?>
-        <div id="historyModal" class="modal" style="display: block;">
-            <div class="modal-content">
-                <span class="close" onclick="document.getElementById('historyModal').style.display='none'">&times;</span>
-                <h3>İmza Geçmişi</h3>
-                <table>
-                    <tr>
-                        <th>Tarih</th>
-                        <th>İşlem</th>
-                        <th>Açıklama</th>
-                        <th>IP Adresi</th>
-                    </tr>
-                    <?php foreach ($history as $log): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($log['olusturma_zamani']); ?></td>
-                            <td><?php echo htmlspecialchars($log['islem_tipi']); ?></td>
-                            <td><?php echo htmlspecialchars($log['aciklama']); ?></td>
-                            <td><?php echo htmlspecialchars($log['ip_adresi']); ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </table>
+        <div class="modal fade show" id="historyModal" tabindex="-1" style="display: block;">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">İmza Geçmişi</h5>
+                        <button type="button" class="btn-close" onclick="document.getElementById('historyModal').style.display='none'"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th>İşlem</th>
+                                        <th>Açıklama</th>
+                                        <th>IP Adresi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($history as $log): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($log['olusturma_zamani']); ?></td>
+                                            <td><?php echo htmlspecialchars($log['islem_tipi']); ?></td>
+                                            <td><?php echo htmlspecialchars($log['aciklama']); ?></td>
+                                            <td><?php echo htmlspecialchars($log['ip_adresi']); ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        <div class="modal-backdrop fade show"></div>
     <?php endif; ?>
 
     <?php if ($groupDocuments): ?>
-        <div id="groupDetailModal" class="modal" style="display: block;">
-            <div class="modal-content">
-                <span class="close" onclick="document.getElementById('groupDetailModal').style.display='none'">&times;</span>
-                <h3>Grup Belgeleri</h3>
-                <table>
-                    <tr>
-                        <th>Sıra</th>
-                        <th>Belge URL</th>
-                        <th>İmzalayan</th>
-                        <th>İmza Zamanı</th>
-                        <th>Durum</th>
-                    </tr>
-                    <?php foreach ($groupDocuments as $doc): ?>
-                        <tr>
-                            <td><?php echo htmlspecialchars($doc['sira_no'] + 1); ?></td>
-                            <td><?php echo htmlspecialchars($doc['belge_url']); ?></td>
-                            <td><?php echo htmlspecialchars($doc['sertifika_sahibi']); ?></td>
-                            <td><?php echo htmlspecialchars($doc['imza_zamani']); ?></td>
-                            <td class="<?php echo $doc['durum'] === 'imzalandi' ? 'success' : ($doc['durum'] === 'hata' ? 'error' : 'pending'); ?>">
-                                <?php echo htmlspecialchars($doc['durum']); ?>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                </table>
+        <div class="modal fade show" id="groupDetailModal" tabindex="-1" style="display: block;">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Grup Belgeleri</h5>
+                        <button type="button" class="btn-close" onclick="document.getElementById('groupDetailModal').style.display='none'"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Sıra</th>
+                                        <th>Belge URL</th>
+                                        <th>İmzalayan</th>
+                                        <th>İmza Zamanı</th>
+                                        <th>Durum</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($groupDocuments as $doc): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($doc['sira_no'] + 1); ?></td>
+                                            <td class="text-truncate" style="max-width: 200px;">
+                                                <?php echo htmlspecialchars($doc['belge_url']); ?>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($doc['sertifika_sahibi']); ?></td>
+                                            <td><?php echo htmlspecialchars($doc['imza_zamani']); ?></td>
+                                            <td>
+                                                <span class="badge bg-<?php echo $doc['durum'] === 'imzalandi' ? 'success' : ($doc['durum'] === 'hata' ? 'danger' : 'warning'); ?>">
+                                                    <?php echo htmlspecialchars($doc['durum']); ?>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+        <div class="modal-backdrop fade show"></div>
     <?php endif; ?>
 
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -267,23 +363,31 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
         function addPdfInput() {
             const div = document.createElement('div');
-            div.className = 'pdf-input';
+            div.className = 'pdf-input input-group mb-3';
             div.innerHTML = `
-                <input type="text" name="pdf_urls[]" placeholder="PDF URL'i" required>
-                <button type="button" onclick="this.parentElement.remove()">Sil</button>
+                <input type="text" name="pdf_urls[]" class="form-control" placeholder="PDF URL'i" required>
+                <button type="button" class="btn btn-danger" onclick="this.parentElement.remove()">
+                    <i class="fas fa-trash"></i>
+                </button>
             `;
             document.getElementById('pdfUrls').appendChild(div);
         }
 
         function addFileInput() {
             const div = document.createElement('div');
-            div.className = 'pdf-file-input';
+            div.className = 'pdf-file-input mb-3';
             div.innerHTML = `
-                <input type="file" name="pdf_files[]" accept=".pdf">
-                <button type="button" onclick="this.parentElement.remove()">Sil</button>
-                <div class="upload-progress" style="display:none;">
-                    <div class="progress-bar"></div>
-                    <span class="progress-text">Yükleniyor... 0%</span>
+                <div class="input-group">
+                    <input type="file" name="pdf_files[]" class="form-control" accept=".pdf">
+                    <button type="button" class="btn btn-danger" onclick="this.parentElement.parentElement.remove()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+                <div class="upload-progress mt-2" style="display:none;">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
+                    </div>
+                    <small class="text-muted progress-text mt-1 d-block">Yükleniyor... 0%</small>
                 </div>
             `;
             document.getElementById('pdfFiles').appendChild(div);
