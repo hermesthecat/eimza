@@ -5,10 +5,12 @@
  */
 
 require_once 'config.php';
+require_once 'KolayImzaException.php';
 
 class KolayImza {
     private $baseUrl;
     private $db;
+    private $hatalar = [];
     
     public function __construct() {
         $this->baseUrl = "sign://";
@@ -16,7 +18,48 @@ class KolayImza {
     }
     
     /**
+     * PDF URL'sini doğrular
+     * @param string $url PDF URL'i
+     * @throws KolayImzaException URL geçersizse
+     */
+    private function validatePdfUrl($url) {
+        if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+            throw new KolayImzaException(
+                'Geçersiz PDF URL\'i',
+                KolayImzaException::HATA_PDF_URL,
+                ['url' => $url]
+            );
+        }
+        
+        // PDF'in erişilebilir olduğunu kontrol et
+        $headers = get_headers($url);
+        if (!$headers || strpos($headers[0], '200') === false) {
+            throw new KolayImzaException(
+                'PDF dosyasına erişilemiyor',
+                KolayImzaException::HATA_PDF_URL,
+                ['url' => $url, 'headers' => $headers]
+            );
+        }
+    }
+    
+    /**
+     * ID'nin geçerliliğini kontrol eder
+     * @param int $id Kontrol edilecek ID
+     * @throws KolayImzaException ID geçersizse
+     */
+    private function validateId($id) {
+        if (!is_numeric($id) || $id <= 0) {
+            throw new KolayImzaException(
+                'Geçersiz ID değeri',
+                KolayImzaException::HATA_GECERSIZ_ID,
+                ['id' => $id]
+            );
+        }
+    }
+    
+    /**
      * Veritabanı bağlantısını kurar
+     * @throws KolayImzaException Bağlantı hatası durumunda
      */
     private function connectDB() {
         try {
@@ -27,7 +70,62 @@ class KolayImza {
                 [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
             );
         } catch (PDOException $e) {
-            die("Veritabanı bağlantı hatası: " . $e->getMessage());
+            throw new KolayImzaException(
+                'Veritabanı bağlantı hatası',
+                KolayImzaException::HATA_VERITABANI_BAGLANTI,
+                ['error' => $e->getMessage()]
+            );
+        }
+    }
+    
+    /**
+     * Veritabanı sorgusunu güvenli şekilde çalıştırır
+     * @param string $sql SQL sorgusu
+     * @param array $params Sorgu parametreleri
+     * @return PDOStatement
+     * @throws KolayImzaException Sorgu hatası durumunda
+     */
+    private function executeQuery($sql, $params = []) {
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            return $stmt;
+        } catch (PDOException $e) {
+            throw new KolayImzaException(
+                'Veritabanı sorgu hatası',
+                KolayImzaException::HATA_VERITABANI_SORGU,
+                [
+                    'sql' => $sql,
+                    'params' => $params,
+                    'error' => $e->getMessage()
+                ]
+            );
+        }
+    }
+    
+    /**
+     * İmza yanıtını doğrular
+     * @param array $response İmza yanıtı
+     * @throws KolayImzaException Yanıt geçersizse
+     */
+    private function validateSignatureResponse($response) {
+        if (!is_array($response)) {
+            throw new KolayImzaException(
+                'Geçersiz imza yanıtı formatı',
+                KolayImzaException::HATA_IMZA_YANIT,
+                ['response' => $response]
+            );
+        }
+        
+        $requiredFields = ['certificate', 'certificateName', 'certificateIssuer', 'createdAt'];
+        $missingFields = array_diff($requiredFields, array_keys($response));
+        
+        if (!empty($missingFields)) {
+            throw new KolayImzaException(
+                'Eksik imza yanıt alanları',
+                KolayImzaException::HATA_IMZA_YANIT,
+                ['missing_fields' => $missingFields]
+            );
         }
     }
     
@@ -81,17 +179,17 @@ class KolayImza {
      * Yeni bir imza kaydı oluşturur
      * @param string $pdfUrl İmzalanacak PDF'in URL'i
      * @return int Oluşturulan kaydın ID'si
+     * @throws KolayImzaException
      */
     public function createSignRecord($pdfUrl) {
-        $stmt = $this->db->prepare("
-            INSERT INTO imza_kayitlari (belge_url, durum)
-            VALUES (:belge_url, 'bekliyor')
-        ");
+        $this->validatePdfUrl($pdfUrl);
         
-        $stmt->execute(['belge_url' => $pdfUrl]);
+        $stmt = $this->executeQuery(
+            "INSERT INTO imza_kayitlari (belge_url, durum) VALUES (:belge_url, 'bekliyor')",
+            ['belge_url' => $pdfUrl]
+        );
+        
         $recordId = $this->db->lastInsertId();
-        
-        // Geçmişe kayıt ekle
         $this->addHistory($recordId, 'olusturuldu', 'İmza talebi oluşturuldu');
         
         return $recordId;
@@ -126,9 +224,21 @@ class KolayImza {
      * @param string $jsonResponse İmza sonucu JSON
      * @param int $recordId Kayıt ID
      * @return array
+     * @throws KolayImzaException
      */
     public function handleSignatureResponse($jsonResponse, $recordId) {
+        $this->validateId($recordId);
+        
         $response = json_decode($jsonResponse, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            throw new KolayImzaException(
+                'Geçersiz JSON formatı',
+                KolayImzaException::HATA_IMZA_YANIT,
+                ['json_error' => json_last_error_msg()]
+            );
+        }
+        
+        $this->validateSignatureResponse($response);
         
         $data = [
             'success' => !empty($response['certificate']),
@@ -347,6 +457,49 @@ class KolayImza {
         $stmt->execute(['grup_id' => $grupId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+    
+    /**
+     * Son hata mesajını döndürür
+     * @return string|null
+     */
+    public function getSonHata() {
+        return end($this->hatalar) ?: null;
+    }
+    
+    /**
+     * Tüm hataları döndürür
+     * @return array
+     */
+    public function getHatalar() {
+        return $this->hatalar;
+    }
+}
+
+// Hata yönetimi için yardımcı fonksiyon
+function hataYonet($callback) {
+    try {
+        return $callback();
+    } catch (KolayImzaException $e) {
+        $response = [
+            'success' => false,
+            'message' => $e->getKullaniciMesaji(),
+            'code' => $e->getCode()
+        ];
+        
+        if (DEBUG_MODE) {
+            $response['details'] = [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'details' => $e->getHataDetaylari()
+            ];
+        }
+        
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        exit;
+    }
 }
 
 // Örnek Kullanım
@@ -354,18 +507,53 @@ $kolayImza = new KolayImza();
 
 // İmza sonucu işleme
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['sign_response'])) {
-    $recordId = $_GET['record_id'] ?? null;
-    $groupId = $_GET['group_id'] ?? null;
-    
-    $result = $kolayImza->handleSignatureResponse(
-        $_POST['sign_response'],
-        $recordId,
-        $groupId
-    );
-    
-    header('Content-Type: application/json');
-    echo json_encode($result);
-    exit;
+    hataYonet(function() use ($kolayImza) {
+        $recordId = $_GET['record_id'] ?? null;
+        $groupId = $_GET['group_id'] ?? null;
+        
+        if (!$recordId && !$groupId) {
+            throw new KolayImzaException(
+                'Kayıt ID veya Grup ID gerekli',
+                KolayImzaException::HATA_GECERSIZ_ID
+            );
+        }
+        
+        $result = $kolayImza->handleSignatureResponse(
+            $_POST['sign_response'],
+            $recordId,
+            $groupId
+        );
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'data' => $result]);
+        exit;
+    });
+}
+
+// Çoklu imza formu işleme
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['pdf_urls'])) {
+    hataYonet(function() use ($kolayImza) {
+        $pdfUrls = $_POST['pdf_urls'];
+        $grupAdi = $_POST['grup_adi'] ?? null;
+        $aciklama = $_POST['aciklama'] ?? '';
+        
+        if (empty($pdfUrls)) {
+            throw new KolayImzaException(
+                'En az bir PDF URL\'i gerekli',
+                KolayImzaException::HATA_PDF_URL
+            );
+        }
+        
+        $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') . 
+                      $_SERVER['HTTP_HOST'] . 
+                      parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+        
+        $signUrl = $kolayImza->createMultiSignUrl($pdfUrls, $responseUrl, $grupAdi, $aciklama);
+        
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'signUrl' => $signUrl]);
+        exit;
+    });
 }
 
 // İmza geçmişi görüntüleme
