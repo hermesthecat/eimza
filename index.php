@@ -37,7 +37,9 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- PDF.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -333,16 +335,14 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                                             <td><?php echo $islem['bitis_zamani'] ? htmlspecialchars($islem['bitis_zamani']) : '-'; ?></td>
                                             <td>
                                                 <span class="badge bg-<?php
-                                                    echo $islem['durum'] === 'tamamlandi' ? 'success' : 
-                                                        ($islem['durum'] === 'devam_ediyor' ? 'warning' : 
-                                                        ($islem['durum'] === 'hata' ? 'danger' : 'secondary'));
-                                                    ?>">
+                                                                        echo $islem['durum'] === 'tamamlandi' ? 'success' : ($islem['durum'] === 'devam_ediyor' ? 'warning' : ($islem['durum'] === 'hata' ? 'danger' : 'secondary'));
+                                                                        ?>">
                                                     <?php echo htmlspecialchars($islem['durum']); ?>
                                                 </span>
                                             </td>
                                             <td>
-                                                <button type="button" class="btn btn-sm btn-info" 
-                                                        onclick="showTopluIslemDetay(<?php echo $islem['id']; ?>)">
+                                                <button type="button" class="btn btn-sm btn-info"
+                                                    onclick="showTopluIslemDetay(<?php echo $islem['id']; ?>)">
                                                     <i class="fas fa-info-circle"></i>
                                                 </button>
                                             </td>
@@ -616,7 +616,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
         // Sürükle-Bırak işlemleri
         function setupDragDrop() {
             const dropZones = document.querySelectorAll('.drop-zone');
-            
+
             dropZones.forEach(zone => {
                 zone.addEventListener('dragover', (e) => {
                     e.preventDefault();
@@ -631,9 +631,9 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                 zone.addEventListener('drop', async (e) => {
                     e.preventDefault();
                     zone.classList.remove('drag-over');
-                    
-                    const files = Array.from(e.dataTransfer.files).filter(file => 
-                        file.type === 'application/pdf' || 
+
+                    const files = Array.from(e.dataTransfer.files).filter(file =>
+                        file.type === 'application/pdf' ||
                         file.name.toLowerCase().endsWith('.pdf')
                     );
 
@@ -644,7 +644,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
                     // Tekli veya çoklu yükleme kontrolü
                     const isMultiple = zone.closest('#pdfFiles') !== null;
-                    
+
                     if (isMultiple) {
                         handleMultipleFiles(files, zone);
                     } else {
@@ -655,8 +655,8 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                 // Dosya seçici için de aynı işlemi yap
                 const fileInput = zone.querySelector('input[type="file"]');
                 fileInput.addEventListener('change', (e) => {
-                    const files = Array.from(e.target.files).filter(file => 
-                        file.type === 'application/pdf' || 
+                    const files = Array.from(e.target.files).filter(file =>
+                        file.type === 'application/pdf' ||
                         file.name.toLowerCase().endsWith('.pdf')
                     );
 
@@ -666,7 +666,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                     }
 
                     const isMultiple = zone.closest('#pdfFiles') !== null;
-                    
+
                     if (isMultiple) {
                         handleMultipleFiles(files, zone);
                     } else {
@@ -679,7 +679,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
         function handleSingleFile(file, zone) {
             const progressElement = zone.parentElement.querySelector('.upload-progress');
             progressElement.style.display = 'block';
-            
+
             uploadFile(file, progressElement).then(url => {
                 // URL'i gizli input'a kaydet
                 const hiddenInput = document.createElement('input');
@@ -687,7 +687,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                 hiddenInput.name = 'pdf_url';
                 hiddenInput.value = url;
                 zone.appendChild(hiddenInput);
-                
+
                 // Başarılı yükleme göstergesi
                 showSuccess(zone, file.name);
             }).catch(error => {
@@ -699,7 +699,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
         function handleMultipleFiles(files, zone) {
             const container = zone.closest('.pdf-file-input');
             const progressElement = container.querySelector('.upload-progress');
-            
+
             // Tüm dosyaları yükle
             Promise.all(files.map(file => {
                 progressElement.style.display = 'block';
@@ -713,7 +713,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                     hiddenInput.value = url;
                     zone.appendChild(hiddenInput);
                 });
-                
+
                 // Başarılı yükleme göstergesi
                 showSuccess(zone, `${files.length} dosya yüklendi`);
             }).catch(error => {
@@ -735,7 +735,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             const errorDiv = document.getElementById('errorMessage');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
-            
+
             setTimeout(() => {
                 errorDiv.style.display = 'none';
             }, 5000);
@@ -748,16 +748,16 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             try {
                 const response = await fetch(`kolayimza.php?toplu_islem_detay=${islemId}`);
                 const data = await response.json();
-                
+
                 if (data.success) {
                     const islem = data.islem;
-                    
+
                     // Modal oluştur
                     const modal = document.createElement('div');
                     modal.className = 'modal fade show';
                     modal.id = 'topluIslemDetayModal';
                     modal.style.display = 'block';
-                    
+
                     // Modal içeriği
                     modal.innerHTML = `
                         <div class="modal-dialog modal-lg">
@@ -820,7 +820,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                         </div>
                         <div class="modal-backdrop fade show"></div>
                     `;
-                    
+
                     document.body.appendChild(modal);
                 } else {
                     showError(data.message || 'İşlem detayı alınamadı');
@@ -843,7 +843,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
         let pageRendering = false;
         let pageNumPending = null;
         let scale = 1.5;
-        
+
         async function showPdfPreview(url) {
             try {
                 // PDF yükleme göstergesi
@@ -859,11 +859,11 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                 // PDF'i yükle
                 const loadingTask = pdfjsLib.getDocument(url);
                 pdfDoc = await loadingTask.promise;
-                
+
                 // Sayfa bilgilerini güncelle
                 document.getElementById('page-count').textContent = pdfDoc.numPages;
                 pageNum = 1;
-                
+
                 // İlk sayfayı göster
                 renderPage(pageNum);
             } catch (error) {
@@ -873,32 +873,34 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
         async function renderPage(num) {
             pageRendering = true;
-            
+
             try {
                 // Sayfayı al
                 const page = await pdfDoc.getPage(num);
-                
+
                 // Canvas boyutunu ayarla
-                const viewport = page.getViewport({ scale });
+                const viewport = page.getViewport({
+                    scale
+                });
                 const canvas = document.getElementById('pdf-canvas');
                 canvas.height = viewport.height;
                 canvas.width = viewport.width;
-                
+
                 // Sayfayı render et
                 const renderContext = {
                     canvasContext: canvas.getContext('2d'),
                     viewport: viewport
                 };
-                
+
                 await page.render(renderContext).promise;
                 pageRendering = false;
-                
+
                 // Bekleyen sayfa varsa onu göster
                 if (pageNumPending !== null) {
                     renderPage(pageNumPending);
                     pageNumPending = null;
                 }
-                
+
                 // Sayfa numarasını güncelle
                 document.getElementById('page-num').textContent = num;
             } catch (error) {
@@ -917,7 +919,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
         function changePage(offset) {
             if (!pdfDoc) return;
-            
+
             const newPage = pageNum + offset;
             if (newPage >= 1 && newPage <= pdfDoc.numPages) {
                 pageNum = newPage;
@@ -929,11 +931,11 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             if (input.files && input.files[0]) {
                 const file = input.files[0];
                 const reader = new FileReader();
-                
+
                 reader.onload = function(e) {
                     showPdfPreview(e.target.result);
                 };
-                
+
                 reader.readAsDataURL(file);
             }
         }

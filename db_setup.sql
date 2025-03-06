@@ -53,21 +53,20 @@ CREATE TABLE IF NOT EXISTS imza_grubu_belgeleri (
     FOREIGN KEY (grup_id) REFERENCES imza_gruplari(id) ON DELETE CASCADE,
     FOREIGN KEY (imza_id) REFERENCES imza_kayitlari(id) ON DELETE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_turkish_ci;
-
 CREATE TABLE IF NOT EXISTS `toplu_islem_gecmisi` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `islem_tipi` enum('tekli','coklu','grup') NOT NULL,
-  `belge_sayisi` int(11) NOT NULL DEFAULT 0,
-  `basarili_sayisi` int(11) NOT NULL DEFAULT 0,
-  `hatali_sayisi` int(11) NOT NULL DEFAULT 0,
-  `baslama_zamani` datetime NOT NULL,
-  `bitis_zamani` datetime DEFAULT NULL,
-  `durum` enum('bekliyor','devam_ediyor','tamamlandi','hata') NOT NULL DEFAULT 'bekliyor',
-  `hata_mesaji` text DEFAULT NULL,
-  `ip_adresi` varchar(45) DEFAULT NULL,
-  `olusturma_zamani` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `idx_islem_tipi` (`islem_tipi`),
-  KEY `idx_durum` (`durum`),
-  KEY `idx_olusturma_zamani` (`olusturma_zamani`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    `id` int(11) NOT NULL AUTO_INCREMENT,
+    `islem_tipi` enum('tekli', 'coklu', 'grup') NOT NULL,
+    `belge_sayisi` int(11) NOT NULL DEFAULT 0,
+    `basarili_sayisi` int(11) NOT NULL DEFAULT 0,
+    `hatali_sayisi` int(11) NOT NULL DEFAULT 0,
+    `baslama_zamani` datetime NOT NULL,
+    `bitis_zamani` datetime DEFAULT NULL,
+    `durum` enum('bekliyor', 'devam_ediyor', 'tamamlandi', 'hata') NOT NULL DEFAULT 'bekliyor',
+    `hata_mesaji` text DEFAULT NULL,
+    `ip_adresi` varchar(45) DEFAULT NULL,
+    `olusturma_zamani` timestamp NOT NULL DEFAULT current_timestamp(),
+    PRIMARY KEY (`id`),
+    KEY `idx_islem_tipi` (`islem_tipi`),
+    KEY `idx_durum` (`durum`),
+    KEY `idx_olusturma_zamani` (`olusturma_zamani`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_general_ci;

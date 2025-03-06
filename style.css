@@ -398,9 +398,11 @@ input[type="file"] {
     0% {
         transform: scale(1);
     }
+
     50% {
         transform: scale(1.02);
     }
+
     100% {
         transform: scale(1);
     }
@@ -415,11 +417,11 @@ input[type="file"] {
     .drop-zone {
         padding: 1rem;
     }
-    
+
     .drop-zone-content p {
         font-size: 0.9rem;
     }
-    
+
     .drop-zone i {
         font-size: 2em !important;
     }
@@ -473,12 +475,12 @@ input[type="file"] {
         flex-direction: column;
         gap: 0.5rem;
     }
-    
+
     #pdf-preview .btn-group {
         width: 100%;
         justify-content: center;
     }
-    
+
     #pdf-canvas {
         width: 100% !important;
     }
@@ -486,9 +488,17 @@ input[type="file"] {
 
 /* PDF Yükleme Animasyonu */
 @keyframes pulse-bg {
-    0% { background-color: #f8f9fa; }
-    50% { background-color: #e9ecef; }
-    100% { background-color: #f8f9fa; }
+    0% {
+        background-color: #f8f9fa;
+    }
+
+    50% {
+        background-color: #e9ecef;
+    }
+
+    100% {
+        background-color: #f8f9fa;
+    }
 }
 
 #pdf-preview.loading .card-body {

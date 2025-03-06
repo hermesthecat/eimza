@@ -502,16 +502,17 @@ class KolayImza
      * @param int $belgeSayisi Toplam belge sayısı
      * @return int İşlem ID
      */
-    public function topluIslemBaslat($islemTipi, $belgeSayisi) {
+    public function topluIslemBaslat($islemTipi, $belgeSayisi)
+    {
         $stmt = $this->db->prepare("
             INSERT INTO toplu_islem_gecmisi 
             (islem_tipi, belge_sayisi, baslama_zamani, ip_adresi, durum) 
             VALUES (?, ?, NOW(), ?, 'devam_ediyor')
         ");
-        
+
         $ipAdresi = $_SERVER['REMOTE_ADDR'] ?? null;
         $stmt->execute([$islemTipi, $belgeSayisi, $ipAdresi]);
-        
+
         return $this->db->lastInsertId();
     }
 
@@ -522,9 +523,10 @@ class KolayImza
      * @param int $hataliSayisi Hatalı işlem sayısı
      * @param string|null $hataMesaji Hata mesajı
      */
-    public function topluIslemGuncelle($islemId, $basariliSayisi, $hataliSayisi, $hataMesaji = null) {
+    public function topluIslemGuncelle($islemId, $basariliSayisi, $hataliSayisi, $hataMesaji = null)
+    {
         $durum = $hataMesaji ? 'hata' : 'devam_ediyor';
-        
+
         $stmt = $this->db->prepare("
             UPDATE toplu_islem_gecmisi 
             SET basarili_sayisi = ?, 
@@ -533,7 +535,7 @@ class KolayImza
                 durum = ?
             WHERE id = ?
         ");
-        
+
         $stmt->execute([$basariliSayisi, $hataliSayisi, $hataMesaji, $durum, $islemId]);
     }
 
@@ -541,14 +543,15 @@ class KolayImza
      * Toplu işlem tamamla
      * @param int $islemId İşlem ID
      */
-    public function topluIslemTamamla($islemId) {
+    public function topluIslemTamamla($islemId)
+    {
         $stmt = $this->db->prepare("
             UPDATE toplu_islem_gecmisi 
             SET bitis_zamani = NOW(),
                 durum = 'tamamlandi'
             WHERE id = ?
         ");
-        
+
         $stmt->execute([$islemId]);
     }
 
@@ -558,7 +561,8 @@ class KolayImza
      * @param int $offset Offset
      * @return array İşlem listesi
      */
-    public function topluIslemGecmisiListele($limit = 10, $offset = 0) {
+    public function topluIslemGecmisiListele($limit = 10, $offset = 0)
+    {
         $stmt = $this->db->prepare("
             SELECT 
                 id,
@@ -576,7 +580,7 @@ class KolayImza
             ORDER BY olusturma_zamani DESC
             LIMIT ? OFFSET ?
         ");
-        
+
         $stmt->execute([$limit, $offset]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -586,7 +590,8 @@ class KolayImza
      * @param int $islemId İşlem ID
      * @return array|null İşlem detayı
      */
-    public function topluIslemDetayiGetir($islemId) {
+    public function topluIslemDetayiGetir($islemId)
+    {
         $stmt = $this->db->prepare("
             SELECT 
                 id,
@@ -603,7 +608,7 @@ class KolayImza
             FROM toplu_islem_gecmisi
             WHERE id = ?
         ");
-        
+
         $stmt->execute([$islemId]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
@@ -713,7 +718,7 @@ try {
     } elseif (isset($_GET['toplu_islem_detay'])) {
         $islemId = (int)$_GET['toplu_islem_detay'];
         $islem = $kolayImza->topluIslemDetayiGetir($islemId);
-        
+
         if ($islem) {
             echo json_encode(['success' => true, 'islem' => $islem]);
         } else {
