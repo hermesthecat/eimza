@@ -424,3 +424,73 @@ input[type="file"] {
         font-size: 2em !important;
     }
 }
+
+/* PDF Önizleme Stilleri */
+#pdf-preview {
+    background: #fff;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+#pdf-preview .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    padding: 0.75rem 1rem;
+}
+
+#pdf-preview .card-body {
+    position: relative;
+    min-height: 400px;
+    max-height: 600px;
+    overflow-y: auto;
+    background: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#pdf-canvas {
+    max-width: 100%;
+    height: auto !important;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+    background: #fff;
+}
+
+.btn-group .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+#page-info {
+    min-width: 120px;
+    text-align: center;
+}
+
+/* Mobil Uyumluluk */
+@media (max-width: 768px) {
+    #pdf-preview .card-header {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    #pdf-preview .btn-group {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    #pdf-canvas {
+        width: 100% !important;
+    }
+}
+
+/* PDF Yükleme Animasyonu */
+@keyframes pulse-bg {
+    0% { background-color: #f8f9fa; }
+    50% { background-color: #e9ecef; }
+    100% { background-color: #f8f9fa; }
+}
+
+#pdf-preview.loading .card-body {
+    animation: pulse-bg 1.5s infinite;
+}

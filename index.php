@@ -35,6 +35,9 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -89,7 +92,12 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
                             <div id="url-input-single" class="form-group mb-3">
                                 <label class="form-label" for="single-pdf">PDF URL'i:</label>
-                                <input type="text" id="single-pdf" class="form-control" value="<?php echo htmlspecialchars($pdfUrl); ?>">
+                                <div class="input-group">
+                                    <input type="text" id="single-pdf" class="form-control" value="<?php echo htmlspecialchars($pdfUrl); ?>">
+                                    <button class="btn btn-secondary" type="button" onclick="showPdfPreview(document.getElementById('single-pdf').value)">
+                                        <i class="fas fa-eye"></i> Önizle
+                                    </button>
+                                </div>
                             </div>
 
                             <div id="file-input-single" class="form-group mb-3" style="display:none;">
@@ -99,7 +107,7 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                                         <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
                                         <p class="mb-2">PDF dosyasını sürükleyip bırakın</p>
                                         <p class="text-muted small">veya</p>
-                                        <input type="file" id="single-pdf-file" class="form-control" accept=".pdf">
+                                        <input type="file" id="single-pdf-file" class="form-control" accept=".pdf" onchange="handleFileSelect(this)">
                                     </div>
                                 </div>
                                 <div class="upload-progress mt-2" style="display:none;">
@@ -107,6 +115,28 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                                         <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
                                     </div>
                                     <small class="text-muted progress-text mt-1 d-block">Yükleniyor... 0%</small>
+                                </div>
+                            </div>
+
+                            <div id="pdf-preview" class="mb-3" style="display:none;">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0">PDF Önizleme</h6>
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="changePage(-1)">
+                                                <i class="fas fa-chevron-left"></i>
+                                            </button>
+                                            <span class="btn btn-sm btn-outline-secondary disabled" id="page-info">
+                                                Sayfa <span id="page-num">1</span> / <span id="page-count">1</span>
+                                            </span>
+                                            <button class="btn btn-sm btn-outline-secondary" onclick="changePage(1)">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <canvas id="pdf-canvas" class="w-100"></canvas>
+                                    </div>
                                 </div>
                             </div>
 
@@ -805,6 +835,106 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             if (modal) {
                 modal.remove();
                 document.querySelector('.modal-backdrop').remove();
+            }
+        }
+
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.5;
+        
+        async function showPdfPreview(url) {
+            try {
+                // PDF yükleme göstergesi
+                document.getElementById('pdf-preview').style.display = 'block';
+                const canvas = document.getElementById('pdf-canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '14px Arial';
+                ctx.fillText('PDF yükleniyor...', 10, 50);
+
+                // PDF'i yükle
+                const loadingTask = pdfjsLib.getDocument(url);
+                pdfDoc = await loadingTask.promise;
+                
+                // Sayfa bilgilerini güncelle
+                document.getElementById('page-count').textContent = pdfDoc.numPages;
+                pageNum = 1;
+                
+                // İlk sayfayı göster
+                renderPage(pageNum);
+            } catch (error) {
+                showError('PDF yüklenemedi: ' + error.message);
+            }
+        }
+
+        async function renderPage(num) {
+            pageRendering = true;
+            
+            try {
+                // Sayfayı al
+                const page = await pdfDoc.getPage(num);
+                
+                // Canvas boyutunu ayarla
+                const viewport = page.getViewport({ scale });
+                const canvas = document.getElementById('pdf-canvas');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                // Sayfayı render et
+                const renderContext = {
+                    canvasContext: canvas.getContext('2d'),
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                pageRendering = false;
+                
+                // Bekleyen sayfa varsa onu göster
+                if (pageNumPending !== null) {
+                    renderPage(pageNumPending);
+                    pageNumPending = null;
+                }
+                
+                // Sayfa numarasını güncelle
+                document.getElementById('page-num').textContent = num;
+            } catch (error) {
+                pageRendering = false;
+                showError('Sayfa gösterilemiyor: ' + error.message);
+            }
+        }
+
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        function changePage(offset) {
+            if (!pdfDoc) return;
+            
+            const newPage = pageNum + offset;
+            if (newPage >= 1 && newPage <= pdfDoc.numPages) {
+                pageNum = newPage;
+                queueRenderPage(pageNum);
+            }
+        }
+
+        function handleFileSelect(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    showPdfPreview(e.target.result);
+                };
+                
+                reader.readAsDataURL(file);
             }
         }
     </script>
