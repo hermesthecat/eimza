@@ -495,6 +495,118 @@ class KolayImza
     {
         return $this->hatalar;
     }
+
+    /**
+     * Toplu işlem başlat
+     * @param string $islemTipi İşlem tipi (tekli, coklu, grup)
+     * @param int $belgeSayisi Toplam belge sayısı
+     * @return int İşlem ID
+     */
+    public function topluIslemBaslat($islemTipi, $belgeSayisi) {
+        $stmt = $this->db->prepare("
+            INSERT INTO toplu_islem_gecmisi 
+            (islem_tipi, belge_sayisi, baslama_zamani, ip_adresi, durum) 
+            VALUES (?, ?, NOW(), ?, 'devam_ediyor')
+        ");
+        
+        $ipAdresi = $_SERVER['REMOTE_ADDR'] ?? null;
+        $stmt->execute([$islemTipi, $belgeSayisi, $ipAdresi]);
+        
+        return $this->db->lastInsertId();
+    }
+
+    /**
+     * Toplu işlem güncelle
+     * @param int $islemId İşlem ID
+     * @param int $basariliSayisi Başarılı işlem sayısı
+     * @param int $hataliSayisi Hatalı işlem sayısı
+     * @param string|null $hataMesaji Hata mesajı
+     */
+    public function topluIslemGuncelle($islemId, $basariliSayisi, $hataliSayisi, $hataMesaji = null) {
+        $durum = $hataMesaji ? 'hata' : 'devam_ediyor';
+        
+        $stmt = $this->db->prepare("
+            UPDATE toplu_islem_gecmisi 
+            SET basarili_sayisi = ?, 
+                hatali_sayisi = ?, 
+                hata_mesaji = ?,
+                durum = ?
+            WHERE id = ?
+        ");
+        
+        $stmt->execute([$basariliSayisi, $hataliSayisi, $hataMesaji, $durum, $islemId]);
+    }
+
+    /**
+     * Toplu işlem tamamla
+     * @param int $islemId İşlem ID
+     */
+    public function topluIslemTamamla($islemId) {
+        $stmt = $this->db->prepare("
+            UPDATE toplu_islem_gecmisi 
+            SET bitis_zamani = NOW(),
+                durum = 'tamamlandi'
+            WHERE id = ?
+        ");
+        
+        $stmt->execute([$islemId]);
+    }
+
+    /**
+     * Toplu işlem geçmişini listele
+     * @param int $limit Limit
+     * @param int $offset Offset
+     * @return array İşlem listesi
+     */
+    public function topluIslemGecmisiListele($limit = 10, $offset = 0) {
+        $stmt = $this->db->prepare("
+            SELECT 
+                id,
+                islem_tipi,
+                belge_sayisi,
+                basarili_sayisi,
+                hatali_sayisi,
+                baslama_zamani,
+                bitis_zamani,
+                durum,
+                hata_mesaji,
+                ip_adresi,
+                olusturma_zamani
+            FROM toplu_islem_gecmisi
+            ORDER BY olusturma_zamani DESC
+            LIMIT ? OFFSET ?
+        ");
+        
+        $stmt->execute([$limit, $offset]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Toplu işlem detayını getir
+     * @param int $islemId İşlem ID
+     * @return array|null İşlem detayı
+     */
+    public function topluIslemDetayiGetir($islemId) {
+        $stmt = $this->db->prepare("
+            SELECT 
+                id,
+                islem_tipi,
+                belge_sayisi,
+                basarili_sayisi,
+                hatali_sayisi,
+                baslama_zamani,
+                bitis_zamani,
+                durum,
+                hata_mesaji,
+                ip_adresi,
+                olusturma_zamani
+            FROM toplu_islem_gecmisi
+            WHERE id = ?
+        ");
+        
+        $stmt->execute([$islemId]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }
 
 // Hata yönetimi için yardımcı fonksiyon
@@ -593,9 +705,20 @@ try {
     }
 
     // Grup detaylarını getirme
-    if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['group_detail'])) {
-        $documents = $kolayImza->listGroupDocuments((int)$_GET['group_detail']);
-        echo json_encode(['success' => true, 'data' => $documents]);
+    if (isset($_GET['group_detail'])) {
+        $groupId = (int)$_GET['group_detail'];
+        $documents = $kolayImza->listGroupDocuments($groupId);
+        echo json_encode(['success' => true, 'documents' => $documents]);
+        exit;
+    } elseif (isset($_GET['toplu_islem_detay'])) {
+        $islemId = (int)$_GET['toplu_islem_detay'];
+        $islem = $kolayImza->topluIslemDetayiGetir($islemId);
+        
+        if ($islem) {
+            echo json_encode(['success' => true, 'islem' => $islem]);
+        } else {
+            echo json_encode(['success' => false, 'message' => 'İşlem bulunamadı']);
+        }
         exit;
     }
 

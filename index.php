@@ -68,6 +68,11 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                             <i class="fas fa-folder me-2"></i>İmza Grupları
                         </button>
                     </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#toplu-islemler" type="button">
+                            <i class="fas fa-history me-2"></i>Toplu İşlem Geçmişi
+                        </button>
+                    </li>
                 </ul>
             </div>
             <div class="card-body">
@@ -244,6 +249,72 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                                                 <a href="?group_detail=<?php echo $group['id']; ?>" class="btn btn-sm btn-info">
                                                     <i class="fas fa-info-circle"></i>
                                                 </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="toplu-islemler">
+                        <h5 class="mb-3">Toplu İşlem Geçmişi</h5>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>İşlem Tipi</th>
+                                        <th>Belge Sayısı</th>
+                                        <th>Başarılı</th>
+                                        <th>Hatalı</th>
+                                        <th>Başlama</th>
+                                        <th>Bitiş</th>
+                                        <th>Durum</th>
+                                        <th>İşlemler</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($kolayImza->topluIslemGecmisiListele() as $islem): ?>
+                                        <tr>
+                                            <td><?php echo htmlspecialchars($islem['id']); ?></td>
+                                            <td>
+                                                <?php
+                                                $islemTipi = [
+                                                    'tekli' => '<i class="fas fa-file-signature"></i> Tekli',
+                                                    'coklu' => '<i class="fas fa-files"></i> Çoklu',
+                                                    'grup' => '<i class="fas fa-folder"></i> Grup'
+                                                ][$islem['islem_tipi']] ?? $islem['islem_tipi'];
+                                                echo $islemTipi;
+                                                ?>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($islem['belge_sayisi']); ?></td>
+                                            <td>
+                                                <span class="text-success">
+                                                    <?php echo htmlspecialchars($islem['basarili_sayisi']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="text-danger">
+                                                    <?php echo htmlspecialchars($islem['hatali_sayisi']); ?>
+                                                </span>
+                                            </td>
+                                            <td><?php echo htmlspecialchars($islem['baslama_zamani']); ?></td>
+                                            <td><?php echo $islem['bitis_zamani'] ? htmlspecialchars($islem['bitis_zamani']) : '-'; ?></td>
+                                            <td>
+                                                <span class="badge bg-<?php
+                                                    echo $islem['durum'] === 'tamamlandi' ? 'success' : 
+                                                        ($islem['durum'] === 'devam_ediyor' ? 'warning' : 
+                                                        ($islem['durum'] === 'hata' ? 'danger' : 'secondary'));
+                                                    ?>">
+                                                    <?php echo htmlspecialchars($islem['durum']); ?>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-info" 
+                                                        onclick="showTopluIslemDetay(<?php echo $islem['id']; ?>)">
+                                                    <i class="fas fa-info-circle"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
@@ -642,6 +713,100 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
         // Sayfa yüklendiğinde sürükle-bırak özelliğini aktifleştir
         document.addEventListener('DOMContentLoaded', setupDragDrop);
+
+        async function showTopluIslemDetay(islemId) {
+            try {
+                const response = await fetch(`kolayimza.php?toplu_islem_detay=${islemId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const islem = data.islem;
+                    
+                    // Modal oluştur
+                    const modal = document.createElement('div');
+                    modal.className = 'modal fade show';
+                    modal.id = 'topluIslemDetayModal';
+                    modal.style.display = 'block';
+                    
+                    // Modal içeriği
+                    modal.innerHTML = `
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Toplu İşlem Detayı #${islem.id}</h5>
+                                    <button type="button" class="btn-close" onclick="closeTopluIslemDetayModal()"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <strong>İşlem Tipi:</strong> ${islem.islem_tipi}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Durum:</strong> 
+                                            <span class="badge bg-${
+                                                islem.durum === 'tamamlandi' ? 'success' : 
+                                                (islem.durum === 'devam_ediyor' ? 'warning' : 
+                                                (islem.durum === 'hata' ? 'danger' : 'secondary'))
+                                            }">${islem.durum}</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <strong>Toplam Belge:</strong> ${islem.belge_sayisi}
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Başarılı:</strong> 
+                                            <span class="text-success">${islem.basarili_sayisi}</span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <strong>Hatalı:</strong> 
+                                            <span class="text-danger">${islem.hatali_sayisi}</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <strong>Başlama:</strong> ${islem.baslama_zamani}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Bitiş:</strong> ${islem.bitis_zamani || '-'}
+                                        </div>
+                                    </div>
+                                    ${islem.hata_mesaji ? `
+                                        <div class="alert alert-danger">
+                                            <strong>Hata Mesajı:</strong><br>
+                                            ${islem.hata_mesaji}
+                                        </div>
+                                    ` : ''}
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>IP Adresi:</strong> ${islem.ip_adresi}
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>Oluşturma:</strong> ${islem.olusturma_zamani}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-backdrop fade show"></div>
+                    `;
+                    
+                    document.body.appendChild(modal);
+                } else {
+                    showError(data.message || 'İşlem detayı alınamadı');
+                }
+            } catch (error) {
+                showError('İşlem detayı alınamadı: ' + error.message);
+            }
+        }
+
+        function closeTopluIslemDetayModal() {
+            const modal = document.getElementById('topluIslemDetayModal');
+            if (modal) {
+                modal.remove();
+                document.querySelector('.modal-backdrop').remove();
+            }
+        }
     </script>
 </body>
 
