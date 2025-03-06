@@ -89,7 +89,14 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
                             <div id="file-input-single" class="form-group mb-3" style="display:none;">
                                 <label class="form-label" for="single-pdf-file">PDF Dosyası:</label>
-                                <input type="file" id="single-pdf-file" class="form-control" accept=".pdf">
+                                <div class="drop-zone">
+                                    <div class="drop-zone-content">
+                                        <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                                        <p class="mb-2">PDF dosyasını sürükleyip bırakın</p>
+                                        <p class="text-muted small">veya</p>
+                                        <input type="file" id="single-pdf-file" class="form-control" accept=".pdf">
+                                    </div>
+                                </div>
                                 <div class="upload-progress mt-2" style="display:none;">
                                     <div class="progress">
                                         <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"></div>
@@ -163,11 +170,13 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
 
                             <div id="pdfFiles" style="display:none;">
                                 <div class="pdf-file-input mb-3">
-                                    <div class="input-group">
-                                        <input type="file" name="pdf_files[]" class="form-control" accept=".pdf">
-                                        <button type="button" class="btn btn-danger" onclick="this.parentElement.parentElement.remove()">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                    <div class="drop-zone">
+                                        <div class="drop-zone-content">
+                                            <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                                            <p class="mb-2">PDF dosyalarını sürükleyip bırakın</p>
+                                            <p class="text-muted small">veya</p>
+                                            <input type="file" name="pdf_files[]" class="form-control" accept=".pdf" multiple>
+                                        </div>
                                     </div>
                                     <div class="upload-progress mt-2" style="display:none;">
                                         <div class="progress">
@@ -377,11 +386,13 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
             const div = document.createElement('div');
             div.className = 'pdf-file-input mb-3';
             div.innerHTML = `
-                <div class="input-group">
-                    <input type="file" name="pdf_files[]" class="form-control" accept=".pdf">
-                    <button type="button" class="btn btn-danger" onclick="this.parentElement.parentElement.remove()">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                <div class="drop-zone">
+                    <div class="drop-zone-content">
+                        <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                        <p class="mb-2">PDF dosyalarını sürükleyip bırakın</p>
+                        <p class="text-muted small">veya</p>
+                        <input type="file" name="pdf_files[]" class="form-control" accept=".pdf" multiple>
+                    </div>
                 </div>
                 <div class="upload-progress mt-2" style="display:none;">
                     <div class="progress">
@@ -500,6 +511,137 @@ $responseUrl = (isset($_SERVER['HTTPS']) ? 'https://' : 'http://') .
                 errorDiv.style.display = 'block';
             }
         };
+
+        // Sürükle-Bırak işlemleri
+        function setupDragDrop() {
+            const dropZones = document.querySelectorAll('.drop-zone');
+            
+            dropZones.forEach(zone => {
+                zone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    zone.classList.add('drag-over');
+                });
+
+                zone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                });
+
+                zone.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    zone.classList.remove('drag-over');
+                    
+                    const files = Array.from(e.dataTransfer.files).filter(file => 
+                        file.type === 'application/pdf' || 
+                        file.name.toLowerCase().endsWith('.pdf')
+                    );
+
+                    if (files.length === 0) {
+                        showError('Lütfen sadece PDF dosyası yükleyin');
+                        return;
+                    }
+
+                    // Tekli veya çoklu yükleme kontrolü
+                    const isMultiple = zone.closest('#pdfFiles') !== null;
+                    
+                    if (isMultiple) {
+                        handleMultipleFiles(files, zone);
+                    } else {
+                        handleSingleFile(files[0], zone);
+                    }
+                });
+
+                // Dosya seçici için de aynı işlemi yap
+                const fileInput = zone.querySelector('input[type="file"]');
+                fileInput.addEventListener('change', (e) => {
+                    const files = Array.from(e.target.files).filter(file => 
+                        file.type === 'application/pdf' || 
+                        file.name.toLowerCase().endsWith('.pdf')
+                    );
+
+                    if (files.length === 0) {
+                        showError('Lütfen sadece PDF dosyası yükleyin');
+                        return;
+                    }
+
+                    const isMultiple = zone.closest('#pdfFiles') !== null;
+                    
+                    if (isMultiple) {
+                        handleMultipleFiles(files, zone);
+                    } else {
+                        handleSingleFile(files[0], zone);
+                    }
+                });
+            });
+        }
+
+        function handleSingleFile(file, zone) {
+            const progressElement = zone.parentElement.querySelector('.upload-progress');
+            progressElement.style.display = 'block';
+            
+            uploadFile(file, progressElement).then(url => {
+                // URL'i gizli input'a kaydet
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'pdf_url';
+                hiddenInput.value = url;
+                zone.appendChild(hiddenInput);
+                
+                // Başarılı yükleme göstergesi
+                showSuccess(zone, file.name);
+            }).catch(error => {
+                showError(error.message);
+                progressElement.style.display = 'none';
+            });
+        }
+
+        function handleMultipleFiles(files, zone) {
+            const container = zone.closest('.pdf-file-input');
+            const progressElement = container.querySelector('.upload-progress');
+            
+            // Tüm dosyaları yükle
+            Promise.all(files.map(file => {
+                progressElement.style.display = 'block';
+                return uploadFile(file, progressElement);
+            })).then(urls => {
+                // URL'leri gizli input'lara kaydet
+                urls.forEach(url => {
+                    const hiddenInput = document.createElement('input');
+                    hiddenInput.type = 'hidden';
+                    hiddenInput.name = 'pdf_urls[]';
+                    hiddenInput.value = url;
+                    zone.appendChild(hiddenInput);
+                });
+                
+                // Başarılı yükleme göstergesi
+                showSuccess(zone, `${files.length} dosya yüklendi`);
+            }).catch(error => {
+                showError(error.message);
+                progressElement.style.display = 'none';
+            });
+        }
+
+        function showSuccess(zone, message) {
+            const content = zone.querySelector('.drop-zone-content');
+            content.innerHTML = `
+                <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                <p class="text-success mb-0">${message}</p>
+            `;
+            zone.classList.add('success');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        // Sayfa yüklendiğinde sürükle-bırak özelliğini aktifleştir
+        document.addEventListener('DOMContentLoaded', setupDragDrop);
     </script>
 </body>
 
