@@ -26,4 +26,24 @@ CREATE TABLE IF NOT EXISTS imza_gecmisi (
     kullanici_bilgisi TEXT,
     olusturma_zamani TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (imza_id) REFERENCES imza_kayitlari(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_turkish_ci;
+
+-- Toplu imza grupları tablosu
+CREATE TABLE IF NOT EXISTS imza_gruplari (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    grup_adi VARCHAR(100),
+    aciklama TEXT,
+    durum ENUM('bekliyor', 'tamamlandi', 'kismen_tamamlandi', 'hata') DEFAULT 'bekliyor',
+    olusturma_zamani TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    guncelleme_zamani TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_turkish_ci;
+
+-- İmza grubu belgeleri tablosu
+CREATE TABLE IF NOT EXISTS imza_grubu_belgeleri (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    grup_id INT NOT NULL,
+    imza_id INT NOT NULL,
+    sira_no INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (grup_id) REFERENCES imza_gruplari(id) ON DELETE CASCADE,
+    FOREIGN KEY (imza_id) REFERENCES imza_kayitlari(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_turkish_ci; 
