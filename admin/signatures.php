@@ -55,6 +55,9 @@ $totalPages = ceil($totalSignatures / $perPage);
         .tab-content {
             padding: 20px 0;
         }
+        .bg-indigo {
+            background-color: #6610f2;
+        }
     </style>
 </head>
 
@@ -123,9 +126,9 @@ $totalPages = ceil($totalSignatures / $perPage);
                                         <?php
                                         $signatureType = $signature['signature_type'] ?? 'single';
                                         $typeInfo = [
-                                            'chain' => ['text' => 'Zincir İmza', 'class' => 'primary', 'icon' => 'link'],
-                                            'parallel' => ['text' => 'Paralel İmza', 'class' => 'info', 'icon' => 'users'],
-                                            'mixed' => ['text' => 'Karışık İmza', 'class' => 'warning', 'icon' => 'random'],
+                                            'chain' => ['text' => 'Zincir İmza', 'class' => 'indigo', 'icon' => 'link'],
+                                            'parallel' => ['text' => 'Paralel İmza', 'class' => 'dark', 'icon' => 'users'],
+                                            'mixed' => ['text' => 'Karışık İmza', 'class' => 'primary', 'icon' => 'random'],
                                             'single' => ['text' => 'Tekli İmza', 'class' => 'secondary', 'icon' => 'user']
                                         ][$signatureType];
                                         ?>
@@ -138,7 +141,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                                     <td>
                                         <?php
                                         $statusClass = [
-                                            'pending' => 'warning',
+                                            'pending' => 'primary',
                                             'completed' => 'success',
                                             'failed' => 'danger'
                                         ][$signature['status']];
@@ -161,16 +164,26 @@ $totalPages = ceil($totalSignatures / $perPage);
 
                                             foreach ($groups as $index => $group) {
                                                 $groupNum = $index + 1;
-                                                $status = $groupStatus[$groupNum] ?? 'pending';
+                                                $status = $groupStatus[$groupNum] ?? 'Bekliyor';
                                         ?>
                                                 <div class="group-status <?= $status ?>">
                                                     Grup <?= $groupNum ?>:
-                                                    <span class="badge bg-<?= $status === 'completed' ? 'success' : 'warning' ?>">
-                                                        <?= ucfirst($status) ?>
+                                                    <?php
+                                                    // Grup durumuna göre badge rengini belirle
+                                                    $badgeClass = 'danger'; // Varsayılan: Kırmızı (bekleyen gruplar için)
+                                                    $statusText = 'Bekliyor';
+                                                    
+                                                    if ($status === 'completed') {
+                                                        $badgeClass = 'success'; // Yeşil (tamamlanan gruplar)
+                                                        $statusText = 'Tamamlandı';
+                                                    } elseif ($groupNum === $currentGroup) {
+                                                        $badgeClass = 'primary'; // Mavi (aktif grup)
+                                                        $statusText = 'Aktif Grup';
+                                                    }
+                                                    ?>
+                                                    <span class="badge bg-<?= $badgeClass ?>">
+                                                        <?= $statusText ?>
                                                     </span>
-                                                    <?php if ($groupNum === $currentGroup): ?>
-                                                        <small class="text-primary">(Aktif)</small>
-                                                    <?php endif; ?>
                                                 </div>
                                         <?php
                                             }
@@ -362,7 +375,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                                       signature.signature_type === 'mixed' ? 'Karma' : ''}
                                     Grup ${groupNum}
                                 </h6>
-                                <span class="badge bg-${status === 'completed' ? 'success' : 'warning'}">
+                                <span class="badge bg-${status === 'completed' ? 'success' : 'primary'}">
                                     ${status === 'completed' ? 'Tamamlandı' : 'Bekliyor'}
                                 </span>
                             </div>
@@ -373,7 +386,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                                         const signed = signatures.find(s => s.certificateSerialNumber === signer);
                                         return `
                                             <li class="mb-2">
-                                                <i class="fas ${signed ? 'fa-check-circle text-success' : 'fa-circle text-warning'}"></i>
+                                                <i class="fas ${signed ? 'fa-check-circle text-success' : 'fa-circle text-primary'}"></i>
                                                 TC: ${signer}
                                                 ${signed ? `
                                                     <br>

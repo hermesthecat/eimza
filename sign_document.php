@@ -193,7 +193,7 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                 Başarısız
                                             </span>
                                         <?php else: ?>
-                                            <span class="badge bg-warning status-badge">
+                                            <span class="badge bg-primary status-badge">
                                                 <i class="fas fa-clock me-1"></i>
                                                 Bekliyor
                                             </span>
@@ -221,12 +221,12 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                 case 'parallel':
                                                     $signatureType = 'Paralel İmza';
                                                     $iconType = 'users';
-                                                    $badgeClass = 'bg-info';
+                                                    $badgeClass = 'bg-dark';
                                                     break;
                                                 case 'mixed':
                                                     $signatureType = 'Karışık İmza';
                                                     $iconType = 'random';
-                                                    $badgeClass = 'bg-warning';
+                                                    $badgeClass = 'bg-primary';
                                                     break;
                                                 default:
                                                     $signatureType = 'Tek İmza';
@@ -258,9 +258,9 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                         $badgeClass = 'bg-success'; // Tamamlandı (yeşil)
                                                     } elseif ($groupNum === $currentGroup) {
                                                         if ($signature['signature_type'] === 'mixed') {
-                                                            $badgeClass = 'bg-info'; // Karışık imzada aktif grup (mavi)
+                                                            $badgeClass = 'bg-primary'; // Karışık imzada aktif grup (mavi)
                                                         } else {
-                                                            $badgeClass = 'bg-warning'; // Normal aktif grup (sarı)
+                                                            $badgeClass = 'bg-primary'; // Normal aktif grup (sarı)
                                                         }
                                                     }
                                                     ?>
