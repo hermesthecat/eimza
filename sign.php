@@ -22,8 +22,8 @@ try {
 
     // Validate file upload
     if (!isset($_FILES['pdfFile']) || $_FILES['pdfFile']['error'] !== UPLOAD_ERR_OK) {
-        $errorMessage = isset($_FILES['pdfFile']) ? 
-            'Dosya yükleme hatası: ' . $_FILES['pdfFile']['error'] : 
+        $errorMessage = isset($_FILES['pdfFile']) ?
+            'Dosya yükleme hatası: ' . $_FILES['pdfFile']['error'] :
             'Dosya yüklenemedi';
         throw new Exception($errorMessage);
     }
@@ -73,7 +73,7 @@ try {
 
     // Prepare signature options with sanitized inputs
     $signatureOptions = [
-        'format' => in_array($_POST['signatureFormat'] ?? 'PadesBes', ['PadesBes', 'PadesT']) 
+        'format' => in_array($_POST['signatureFormat'] ?? 'PadesBes', ['PadesBes', 'PadesT'])
             ? $_POST['signatureFormat'] : 'PadesBes',
         'x' => filter_var($_POST['posX'] ?? 10, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0]]) ?: 10,
         'y' => filter_var($_POST['posY'] ?? 10, FILTER_VALIDATE_INT, ["options" => ["min_range" => 0]]) ?: 10,
@@ -89,13 +89,13 @@ try {
     // Get server protocol and host
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
     $host = $_SERVER['HTTP_HOST'];
-    
+
     // Create file URL
     $fileUrl = $protocol . $host . '/uploads/' . $filename;
 
     // Log the generated URL for debugging
     Logger::getInstance()->debug("Generated file URL: $fileUrl");
-    
+
     // Prepare sign protocol URL
     $request = [
         'resources' => [
@@ -130,7 +130,6 @@ try {
         'signatureId' => $signatureId
     ]);
     exit;
-
 } catch (Exception $e) {
     // Log error with details
     Logger::getInstance()->error(sprintf(

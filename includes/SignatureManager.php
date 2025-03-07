@@ -1,9 +1,11 @@
 <?php
-class SignatureManager {
+class SignatureManager
+{
     private $db;
     private $logger;
 
-    public function __construct(PDO $db, Logger $logger) {
+    public function __construct(PDO $db, Logger $logger)
+    {
         $this->db = $db;
         $this->logger = $logger;
     }
@@ -11,7 +13,8 @@ class SignatureManager {
     /**
      * İmza işlemini veritabanına kaydet
      */
-    public function createSignatureRecord($fileInfo, $signatureOptions) {
+    public function createSignatureRecord($fileInfo, $signatureOptions)
+    {
         try {
             $sql = "INSERT INTO signatures (
                 filename, original_filename, file_size, signature_format,
@@ -51,7 +54,8 @@ class SignatureManager {
     /**
      * İmza sonucunu güncelle
      */
-    public function updateSignatureResult($filename, $signatureData) {
+    public function updateSignatureResult($filename, $signatureData)
+    {
         try {
             $sql = "UPDATE signatures SET 
                 status = 'completed',
@@ -86,7 +90,8 @@ class SignatureManager {
     /**
      * İmza hatası kaydet
      */
-    public function markAsFailed($filename, $errorMessage) {
+    public function markAsFailed($filename, $errorMessage)
+    {
         try {
             $sql = "UPDATE signatures SET 
                 status = 'failed',
@@ -109,7 +114,8 @@ class SignatureManager {
     /**
      * İmza kaydını getir
      */
-    public function getSignatureRecord($filename) {
+    public function getSignatureRecord($filename)
+    {
         try {
             $sql = "SELECT * FROM signatures WHERE filename = :filename";
             $stmt = $this->db->prepare($sql);
@@ -124,7 +130,8 @@ class SignatureManager {
     /**
      * Son imzaları getir (pagination ile)
      */
-    public function getRecentSignatures($limit = 10, $offset = 0) {
+    public function getRecentSignatures($limit = 10, $offset = 0)
+    {
         try {
             $sql = "SELECT * FROM signatures ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
             $stmt = $this->db->prepare($sql);
@@ -141,7 +148,8 @@ class SignatureManager {
     /**
      * Toplam imza sayısını getir
      */
-    public function getTotalSignatures() {
+    public function getTotalSignatures()
+    {
         try {
             $sql = "SELECT COUNT(*) FROM signatures";
             return (int)$this->db->query($sql)->fetchColumn();
@@ -154,7 +162,8 @@ class SignatureManager {
     /**
      * İmzaları filtrele
      */
-    public function searchSignatures($filters = [], $limit = 10, $offset = 0) {
+    public function searchSignatures($filters = [], $limit = 10, $offset = 0)
+    {
         try {
             $where = [];
             $params = [];
@@ -180,9 +189,9 @@ class SignatureManager {
             }
 
             $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
-            
+
             $sql = "SELECT * FROM signatures $whereClause ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
-            
+
             $stmt = $this->db->prepare($sql);
             foreach ($params as $key => $value) {
                 $stmt->bindValue(":$key", $value);
@@ -190,7 +199,7 @@ class SignatureManager {
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
-            
+
             return $stmt->fetchAll();
         } catch (PDOException $e) {
             $this->logger->error('Database error while searching signatures: ' . $e->getMessage());

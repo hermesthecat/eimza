@@ -10,9 +10,10 @@
     padding: 1.5rem;
 }
 
-.form-control:focus, .form-select:focus {
+.form-control:focus,
+.form-select:focus {
     border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
 }
 
 .btn-primary {
@@ -44,7 +45,7 @@
     .container {
         padding: 1rem;
     }
-    
+
     .card {
         margin: 0.5rem;
     }

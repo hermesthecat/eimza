@@ -24,7 +24,7 @@ try {
     }
 
     $resource = $response['resources'][0];
-    
+
     // Validate signature
     if (!isset($resource['signature'])) {
         throw new Exception('İmza bilgisi bulunamadı');
@@ -75,11 +75,10 @@ try {
             'date' => $signatureRecord['signature_date']
         ]
     ]);
-
 } catch (Exception $e) {
     // Log error
     Logger::getInstance()->error('Signature verification error: ' . $e->getMessage());
-    
+
     // Mark signature as failed if filename is available
     if (isset($signatureManager) && isset($filename)) {
         $signatureManager->markAsFailed($filename, $e->getMessage());

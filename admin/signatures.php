@@ -25,6 +25,7 @@ $totalPages = ceil($totalSignatures / $perPage);
 ?>
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,6 +37,7 @@ $totalPages = ceil($totalSignatures / $perPage);
     <!-- DataTables -->
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
@@ -95,8 +97,8 @@ $totalPages = ceil($totalSignatures / $perPage);
                                     <td>
                                         <?= htmlspecialchars($signature['original_filename']) ?>
                                         <?php if ($signature['status'] === 'completed'): ?>
-                                            <a href="../uploads/<?= htmlspecialchars($signature['filename']) ?>" 
-                                               target="_blank" class="text-primary ms-2">
+                                            <a href="../uploads/<?= htmlspecialchars($signature['filename']) ?>"
+                                                target="_blank" class="text-primary ms-2">
                                                 <i class="fas fa-download"></i>
                                             </a>
                                         <?php endif; ?>
@@ -122,8 +124,8 @@ $totalPages = ceil($totalSignatures / $perPage);
                                     </td>
                                     <td><?= date('d.m.Y H:i', strtotime($signature['created_at'])) ?></td>
                                     <td>
-                                        <button type="button" class="btn btn-sm btn-info" 
-                                                onclick="showDetails(<?= htmlspecialchars(json_encode($signature)) ?>)">
+                                        <button type="button" class="btn btn-sm btn-info"
+                                            onclick="showDetails(<?= htmlspecialchars(json_encode($signature)) ?>)">
                                             <i class="fas fa-info-circle"></i>
                                         </button>
                                         <?php if ($signature['status'] === 'failed'): ?>
@@ -143,17 +145,17 @@ $totalPages = ceil($totalSignatures / $perPage);
                 </div>
 
                 <?php if ($totalPages > 1): ?>
-                <div class="d-flex justify-content-center mt-4">
-                    <nav aria-label="İmza kayıtları sayfaları">
-                        <ul class="pagination">
-                            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                                <li class="page-item <?= $i === $page ? 'active' : '' ?>">
-                                    <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
-                                </li>
-                            <?php endfor; ?>
-                        </ul>
-                    </nav>
-                </div>
+                    <div class="d-flex justify-content-center mt-4">
+                        <nav aria-label="İmza kayıtları sayfaları">
+                            <ul class="pagination">
+                                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                                    <li class="page-item <?= $i === $page ? 'active' : '' ?>">
+                                        <a class="page-link" href="?page=<?= $i ?>"><?= $i ?></a>
+                                    </li>
+                                <?php endfor; ?>
+                            </ul>
+                        </nav>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -174,13 +176,13 @@ $totalPages = ceil($totalSignatures / $perPage);
                             <dl>
                                 <dt>Sertifika Sahibi</dt>
                                 <dd id="certName">-</dd>
-                                
+
                                 <dt>Sertifika Sağlayıcı</dt>
                                 <dd id="certIssuer">-</dd>
-                                
+
                                 <dt>Seri No</dt>
                                 <dd id="certSerial">-</dd>
-                                
+
                                 <dt>İmza Tarihi</dt>
                                 <dd id="sigDate">-</dd>
                             </dl>
@@ -190,13 +192,13 @@ $totalPages = ceil($totalSignatures / $perPage);
                             <dl>
                                 <dt>Orijinal Dosya Adı</dt>
                                 <dd id="origFilename">-</dd>
-                                
+
                                 <dt>Dosya Boyutu</dt>
                                 <dd id="fileSize">-</dd>
-                                
+
                                 <dt>İmza Formatı</dt>
                                 <dd id="sigFormat">-</dd>
-                                
+
                                 <dt>IP Adresi</dt>
                                 <dd id="ipAddress">-</dd>
                             </dl>
@@ -213,11 +215,13 @@ $totalPages = ceil($totalSignatures / $perPage);
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
-    
+
     <script>
         $(document).ready(function() {
             $('#signaturesTable').DataTable({
-                order: [[0, 'desc']],
+                order: [
+                    [0, 'desc']
+                ],
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/tr.json'
                 },
@@ -232,9 +236,9 @@ $totalPages = ceil($totalSignatures / $perPage);
             $('#certName').text(signature.certificate_name || '-');
             $('#certIssuer').text(signature.certificate_issuer || '-');
             $('#certSerial').text(signature.certificate_serial_number || '-');
-            $('#sigDate').text(signature.signature_date ? 
+            $('#sigDate').text(signature.signature_date ?
                 new Date(signature.signature_date).toLocaleString('tr-TR') : '-');
-            
+
             $('#origFilename').text(signature.original_filename);
             $('#fileSize').text(formatFileSize(signature.file_size));
             $('#sigFormat').text(signature.signature_format);
@@ -260,4 +264,5 @@ $totalPages = ceil($totalSignatures / $perPage);
         }
     </script>
 </body>
+
 </html>
