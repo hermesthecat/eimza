@@ -12,6 +12,17 @@ if (isset($_POST['sign']) && isset($_POST['filename'])) {
         $filename = $_POST['filename'];
         $certificateNo = $_POST['certificate_no'];
 
+        // Debug: İmza kaydını kontrol et
+        $record = $signatureManager->getSignatureRecord($filename);
+        Logger::getInstance()->debug('İmza verileri:', [
+            'filename' => $filename,
+            'certificate' => $certificateNo,
+            'signature_groups' => json_decode($record['signature_groups'], true),
+            'current_group' => $record['current_group'],
+            'group_signatures' => json_decode($record['group_signatures'], true),
+            'group_status' => json_decode($record['group_status'], true)
+        ]);
+
         // İmza yetkisi kontrolü
         if ($signatureManager->checkSignaturePermission($filename, $certificateNo)) {
             // Burada gerçek imzalama işlemi yapılacak

@@ -38,31 +38,58 @@ class SignatureManager
                 :group_signatures, :group_status
             )";
 
-            // Her grup için boş imza dizisi oluştur
+            // Grup verilerini doğrula
+            foreach ($signatureGroups as $group) {
+                if (!isset($group['signers']) || !is_array($group['signers'])) {
+                    throw new Exception('Geçersiz grup yapısı.');
+                }
+            }
+
+            // Her grup için boş imza dizisi oluştur (1'den başlayan indekslerle)
             $groupSignatures = [];
             $groupStatus = [];
             foreach ($signatureGroups as $index => $group) {
-                $groupSignatures[$index + 1] = [];
-                $groupStatus[$index + 1] = 'pending';
+                $groupNum = $index + 1;
+                $groupSignatures[$groupNum] = [];
+                $groupStatus[$groupNum] = 'pending';
+            }
+
+            // JSON verilerinin geçerliliğini kontrol et
+            $jsonGroups = json_encode($signatureGroups);
+            $jsonSignatures = json_encode($groupSignatures);
+            $jsonStatus = json_encode($groupStatus);
+
+            if ($jsonGroups === false || $jsonSignatures === false || $jsonStatus === false) {
+                throw new Exception('Grup verilerini JSON\'a dönüştürme hatası.');
             }
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                'filename' => $fileInfo['filename'],
-                'original_filename' => $fileInfo['original_name'],
-                'file_size' => $fileInfo['size'],
-                'signature_format' => $signatureOptions['format'],
-                'pos_x' => $signatureOptions['x'],
-                'pos_y' => $signatureOptions['y'],
-                'width' => $signatureOptions['width'],
-                'height' => $signatureOptions['height'],
-                'location' => $signatureOptions['location'],
-                'reason' => $signatureOptions['reason'],
-                'ip_address' => $_SERVER['REMOTE_ADDR'],
-                'signature_groups' => json_encode($signatureGroups),
-                'group_signatures' => json_encode($groupSignatures),
-                'group_status' => json_encode($groupStatus)
-            ]);
+            try {
+                $stmt->execute([
+                    'filename' => $fileInfo['filename'],
+                    'original_filename' => $fileInfo['original_name'],
+                    'file_size' => $fileInfo['size'],
+                    'signature_format' => $signatureOptions['format'],
+                    'pos_x' => $signatureOptions['x'],
+                    'pos_y' => $signatureOptions['y'],
+                    'width' => $signatureOptions['width'],
+                    'height' => $signatureOptions['height'],
+                    'location' => $signatureOptions['location'],
+                    'reason' => $signatureOptions['reason'],
+                    'ip_address' => $_SERVER['REMOTE_ADDR'],
+                    'signature_groups' => $jsonGroups,
+                    'group_signatures' => $jsonSignatures,
+                    'group_status' => $jsonStatus
+                ]);
+            } catch (PDOException $e) {
+                $this->logger->error('Database insert error:', [
+                    'error' => $e->getMessage(),
+                    'groups' => $signatureGroups,
+                    'signatures' => $groupSignatures,
+                    'status' => $groupStatus
+                ]);
+                throw new Exception('İmza süreci başlatılamadı: Veritabanı hatası.');
+            }
 
             return $this->db->lastInsertId();
         } catch (PDOException $e) {
@@ -92,16 +119,33 @@ class SignatureManager
             $groupSignatures = json_decode($result['group_signatures'], true);
             $groupStatus = json_decode($result['group_status'], true);
 
+            if (!$signatureGroups || !$groupSignatures || !$groupStatus) {
+                throw new Exception('İmza grubu verileri geçersiz.');
+            }
+
             // Önceki grupların hepsi tamamlanmış olmalı
             for ($i = 1; $i < $currentGroup; $i++) {
-                if ($groupStatus[$i] !== 'completed') {
+                if (!isset($groupStatus[$i]) || $groupStatus[$i] !== 'completed') {
                     throw new Exception('Önceki imza grubu henüz tamamlanmamış.');
                 }
             }
 
             // Şu anki grubun imzacıları arasında olmalı
+            if (!isset($signatureGroups[$currentGroup - 1]) ||
+                !is_array($signatureGroups[$currentGroup - 1]) ||
+                !isset($signatureGroups[$currentGroup - 1]['signers']) ||
+                !is_array($signatureGroups[$currentGroup - 1]['signers'])) {
+                
+                // Debug bilgisi logla
+                $this->logger->error('Group data error:', [
+                    'currentGroup' => $currentGroup,
+                    'signatureGroups' => $signatureGroups
+                ]);
+                throw new Exception('İmza grubu bilgisi bulunamadı. (Grup: ' . $currentGroup . ')');
+            }
+
             $currentSigners = $signatureGroups[$currentGroup - 1]['signers'];
-            if (!in_array($certificateSerialNumber, $currentSigners)) {
+            if (!is_array($currentSigners) || !in_array($certificateSerialNumber, $currentSigners)) {
                 throw new Exception('Bu belgeyi imzalama yetkiniz yok.');
             }
 
@@ -141,6 +185,14 @@ class SignatureManager
             $currentGroup = $current['current_group'];
             $groupSignatures = json_decode($current['group_signatures'], true);
             $groupStatus = json_decode($current['group_status'], true);
+
+            if (!$signatureGroups || !$groupSignatures || !$groupStatus) {
+                throw new Exception('İmza grubu verileri geçersiz.');
+            }
+
+            if (!isset($groupSignatures[$currentGroup])) {
+                $groupSignatures[$currentGroup] = [];
+            }
 
             // Yeni imza bilgisini ekle
             $groupSignatures[$currentGroup][] = [
