@@ -123,6 +123,9 @@ $signatures = $signatureManager->getRecentSignatures(50);
         .table> :not(caption)>*>* {
             vertical-align: middle;
         }
+        .bg-indigo {
+            background-color: #6610f2;
+        }
     </style>
 </head>
 
@@ -156,6 +159,7 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                 <th>Belge Adı</th>
                                 <th>Yükleme Tarihi</th>
                                 <th>İmza Durumu</th>
+                                <th>İmza Tipi</th>
                                 <th>Mevcut Grup</th>
                                 <th>İşlemler</th>
                             </tr>
@@ -192,6 +196,45 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                 <i class="fas fa-clock me-1"></i>
                                                 Bekliyor
                                             </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $signatureType = 'Belirsiz';
+                                        $iconType = 'minus';
+                                        $badgeClass = 'bg-secondary';
+                                        $totalSigners = 0;
+
+                                        if (!empty($groups)) {
+                                            $totalGroups = count($groups);
+                                            foreach ($groups as $group) {
+                                                $totalSigners += count($group['signers']);
+                                            }
+
+                                            if ($totalGroups > 1) {
+                                                $signatureType = 'Zincir İmza';
+                                                $iconType = 'link';
+                                                $badgeClass = 'bg-indigo';
+                                            } elseif (isset($groups[0]) && count($groups[0]['signers']) > 1) {
+                                                $signatureType = 'Paralel İmza';
+                                                $iconType = 'users';
+                                                $badgeClass = 'bg-info';
+                                            } else {
+                                                $signatureType = 'Tek İmza';
+                                                $iconType = 'user';
+                                                $badgeClass = 'bg-primary';
+                                            }
+                                        }
+                                        ?>
+                                        <span class="badge <?= $badgeClass ?>">
+                                            <i class="fas fa-<?= $iconType ?> me-1"></i>
+                                            <?= $signatureType ?>
+                                        </span>
+                                        <?php if ($totalSigners > 0): ?>
+                                        <span class="badge bg-secondary ms-1" title="Toplam İmzacı">
+                                            <i class="fas fa-users me-1"></i>
+                                            <?= $totalSigners ?>
+                                        </span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
