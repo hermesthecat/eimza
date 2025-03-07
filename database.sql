@@ -1,0 +1,27 @@
+-- İmza tablosu
+CREATE TABLE signatures (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    original_filename VARCHAR(255) NOT NULL,
+    file_size INT NOT NULL,
+    signature_format VARCHAR(50) NOT NULL,
+    certificate_name VARCHAR(255),
+    certificate_issuer VARCHAR(255),
+    certificate_serial_number VARCHAR(100),
+    signature_date DATETIME,
+    signature_location VARCHAR(255),
+    signature_reason VARCHAR(255),
+    pdf_signature_pos_x INT,
+    pdf_signature_pos_y INT,
+    pdf_signature_width INT,
+    pdf_signature_height INT,
+    signature_data TEXT,
+    ip_address VARCHAR(45),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
+    error_message TEXT,
+    INDEX idx_filename (filename),
+    INDEX idx_certificate_serial (certificate_serial_number),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
