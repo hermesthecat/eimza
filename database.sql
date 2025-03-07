@@ -30,6 +30,7 @@ CREATE TABLE signatures (
     current_group INT DEFAULT 1,
     group_signatures JSON,
     group_status JSON,
+    signature_type ENUM('chain', 'parallel') DEFAULT 'chain',
     INDEX idx_filename (filename),
     INDEX idx_certificate_serial (certificate_serial_number),
     INDEX idx_status (status),

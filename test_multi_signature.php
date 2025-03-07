@@ -12,108 +12,304 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
 
 <head>
     <title>Çoklu İmza Test Sayfası</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background: #f5f5f5;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: #f0f2f5;
+            color: #1a1a1a;
+            line-height: 1.6;
+        }
+
+        h1 {
+            font-size: 2.4rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 2rem;
+            text-align: center;
         }
 
         .step {
-            border: 1px solid #ddd;
-            padding: 20px;
-            margin: 10px 0;
             background: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin: 20px auto;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .step h2 {
+            font-size: 1.5rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 1.5rem;
         }
 
         .button {
-            padding: 10px 20px;
-            background: #4CAF50;
+            padding: 12px 24px;
+            background: #3b82f6;
             color: white;
             border: none;
+            border-radius: 8px;
             cursor: pointer;
-            border-radius: 3px;
+            font-weight: 500;
+            font-size: 1rem;
+            transition: all 0.2s ease;
         }
 
         .button:hover {
-            background: #45a049;
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        /* File input styling */
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            background: #f9fafb;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #3b82f6;
+            background: #f3f4f6;
         }
 
         /* Grup stilleri */
         .group {
-            border: 1px solid #eee;
-            padding: 15px;
-            margin: 10px 0;
-            border-radius: 3px;
+            background: #f8fafc;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .group:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .group h3 {
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #1f2937;
             margin-top: 0;
-            color: #333;
+            margin-bottom: 1rem;
         }
 
         .signers {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
             align-items: center;
         }
 
         .signers input {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 3px;
+            flex: 1;
+            min-width: 200px;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .signers input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
         }
 
         .addSigner,
         .addGroup {
-            padding: 5px 10px;
-            background: #2196F3;
+            padding: 8px 16px;
+            background: #4b5563;
             color: white;
             border: none;
-            border-radius: 3px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
         }
 
         .addSigner:hover,
         .addGroup:hover {
-            background: #1976D2;
+            background: #374151;
+            transform: translateY(-1px);
+        }
+
+        /* İmza tipi seçimi stilleri */
+        .signature-type-selection {
+            background: #fff;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .signature-type-selection p {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 1rem;
+        }
+
+        .signature-type-selection label {
+            display: block;
+            padding: 12px;
+            margin: 8px 0;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .signature-type-selection label:hover {
+            background: #f3f4f6;
+            border-color: #3b82f6;
+        }
+
+        .signature-type-selection input[type="radio"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .tooltip {
+            color: #6b7280;
+            font-size: 0.9rem;
+            margin-left: 10px;
+            font-weight: normal;
         }
 
         /* İmza durumu stilleri */
         .groups-status {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-top: 20px;
         }
 
         .group-status {
-            flex: 1;
-            min-width: 300px;
-            border: 1px solid #eee;
-            padding: 15px;
-            border-radius: 3px;
-            background: #f9f9f9;
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            transition: all 0.2s ease;
+        }
+
+        .group-status:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         }
 
         .group-status h4 {
-            margin-top: 0;
-            color: #333;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #1f2937;
+            margin: 0 0 1rem 0;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .group-status p {
+            color: #374151;
+            margin: 0.5rem 0;
         }
 
         .group-status ul {
             list-style: none;
             padding: 0;
+            margin: 1rem 0;
         }
 
         .group-status li {
-            padding: 5px 0;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: #374151;
         }
 
         .group-status li:not(:last-child) {
-            border-bottom: 1px solid #eee;
+            margin-bottom: 8px;
+        }
+
+        .group-status li.signed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .group-status li.waiting {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .group-info {
+            background: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border: 1px solid #e5e7eb;
+        }
+
+        .group-info h4 {
+            color: #1f2937;
+            margin: 0 0 8px 0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .status-badge.completed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-badge.active {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .signature-date {
+            font-size: 0.875rem;
+            color: #166534;
+        }
+
+        .signature-status {
+            font-size: 0.875rem;
+            color: #1e40af;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            gap: 20px;
         }
     </style>
 </head>
@@ -122,11 +318,26 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
     <h1>Çoklu İmza Test Sayfası</h1>
 
     <div class="step">
-        <h2>Adım 1: PDF Yükle ve İmza Zinciri Başlat</h2>
+        <h2>Adım 1: PDF Yükle ve İmza Sürecini Başlat</h2>
         <form method="post" enctype="multipart/form-data">
             <p>
                 <input type="file" name="pdf_file" accept=".pdf" required>
             </p>
+            
+            <!-- İmza Tipi Seçimi -->
+            <div class="signature-type-selection">
+                <p><strong>İmza Tipi Seçin:</strong></p>
+                <label>
+                    <input type="radio" name="signature_type" value="chain" checked> İmza Zinciri
+                    <span class="tooltip">(İmzalar sırayla, bir grup diğerinden sonra)</span>
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="signature_type" value="parallel"> Paralel İmza
+                    <span class="tooltip">(Tüm gruplar aynı anda imzalayabilir)</span>
+                </label>
+            </div>
+
             <div id="signatureGroups">
                 <strong>İmza Grupları:</strong><br>
                 <div class="group" data-group="1">
@@ -136,12 +347,33 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                         <button type="button" class="addSigner">+ İmzacı Ekle</button>
                     </div>
                 </div>
-                <button type="button" class="addGroup">+ Yeni Grup Ekle</button>
             </div>
-            <input type="submit" name="init_process" value="İmza Sürecini Başlat" class="button">
+            <div class="form-actions">
+                <button type="button" class="addGroup">+ Yeni Grup Ekle</button>
+                <input type="submit" name="init_process" value="İmza Sürecini Başlat" class="button">
+            </div>
 
             <script>
                 document.addEventListener('DOMContentLoaded', function() {
+                    // İmza tipi seçimi değiştiğinde
+                    document.querySelectorAll('input[name="signature_type"]').forEach(function(radio) {
+                        radio.addEventListener('change', function(e) {
+                            const signatureType = e.target.value;
+                            const groups = document.querySelectorAll('.group');
+                            
+                            groups.forEach(function(group) {
+                                const groupTitle = group.querySelector('h3');
+                                const groupNum = group.dataset.group;
+                                
+                                if (signatureType === 'parallel') {
+                                    groupTitle.textContent = `Paralel Grup ${groupNum}:`;
+                                } else {
+                                    groupTitle.textContent = `Grup ${groupNum}:`;
+                                }
+                            });
+                        });
+                    });
+
                     // Yeni imzacı ekleme
                     document.addEventListener('click', function(e) {
                         if (e.target.classList.contains('addSigner')) {
@@ -160,23 +392,23 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                     document.querySelector('.addGroup').addEventListener('click', function() {
                         const groups = document.querySelectorAll('.group');
                         const newGroupNum = groups.length + 1;
+                        const signatureType = document.querySelector('input[name="signature_type"]:checked').value;
 
                         const groupDiv = document.createElement('div');
                         groupDiv.className = 'group';
                         groupDiv.dataset.group = newGroupNum;
 
-                        groupDiv.innerHTML = `
-                        <h3>Grup ${newGroupNum}:</h3>
-                        <div class="signers">
-                            <input type="text" name="groups[${newGroupNum}][]" placeholder="TC Kimlik No" required>
-                            <button type="button" class="addSigner">+ İmzacı Ekle</button>
-                        </div>
-                    `;
+                        const groupTitle = signatureType === 'parallel' ? `Paralel Grup ${newGroupNum}:` : `Grup ${newGroupNum}:`;
 
-                        document.querySelector('#signatureGroups').insertBefore(
-                            groupDiv,
-                            this
-                        );
+                        groupDiv.innerHTML = `
+                            <h3>${groupTitle}</h3>
+                            <div class="signers">
+                                <input type="text" name="groups[${newGroupNum}][]" placeholder="TC Kimlik No" required>
+                                <button type="button" class="addSigner">+ İmzacı Ekle</button>
+                            </div>
+                        `;
+
+                        document.querySelector('#signatureGroups').appendChild(groupDiv);
                     });
                 });
             </script>
@@ -187,6 +419,7 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
     if (isset($_POST['init_process']) && isset($_FILES['pdf_file'])) {
         $file = $_FILES['pdf_file'];
         $groups = $_POST['groups'];
+        $signatureType = $_POST['signature_type'] ?? 'chain';
 
         // Grupları düzenle
         $signatureGroups = [];
@@ -210,7 +443,7 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
             // PDF'i uploads klasörüne taşı
             move_uploaded_file($file['tmp_name'], 'uploads/' . $fileInfo['filename']);
 
-            // Karma imza sürecini başlat
+            // İmza sürecini başlat
             $id = $signatureManager->initSignatureProcess(
                 $fileInfo,
                 [
@@ -222,7 +455,8 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                     'location' => 'Test Location',
                     'reason' => 'Test Reason'
                 ],
-                $signatureGroups
+                $signatureGroups,
+                $signatureType
             );
 
             // Başarılı mesajı göster
@@ -236,8 +470,6 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                 echo "<p>İmzacılar: " . implode(', ', $group['signers']) . "</p>";
                 echo "</div>";
             }
-
-            echo "<p>İlk Grup İmzacıları: " . implode(', ', $signatureGroups[0]['signers']) . "</p>";
             echo "</div>";
         }
     }
@@ -262,11 +494,24 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
             foreach ($signatureGroups as $index => $group) {
                 $groupNum = $index + 1;
                 echo "<div class='group-status'>";
-                echo "<h4>Grup " . $groupNum . ":</h4>";
-                echo "<p>Durum: " . $groupStatus[$groupNum] . "</p>";
+                echo "<h4>Grup " . $groupNum . "</h4>";
+                
+                // Grup durumu badge'i
+                $statusClass = '';
+                $statusText = '';
+                switch ($groupStatus[$groupNum]) {
+                    case 'completed':
+                        $statusClass = 'completed';
+                        $statusText = 'Tamamlandı';
+                        break;
+                    case 'pending':
+                        $statusClass = $groupNum === $currentGroup ? 'active' : 'pending';
+                        $statusText = $groupNum === $currentGroup ? 'Aktif Grup' : 'Bekliyor';
+                        break;
+                }
+                echo "<div class='status-badge " . $statusClass . "'>" . $statusText . "</div>";
 
                 // İmzacıları göster
-                echo "<p>İmzacılar:</p>";
                 echo "<ul>";
                 foreach ($group['signers'] as $signer) {
                     $signed = false;
@@ -283,26 +528,25 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                         }
                     }
 
-                    echo "<li>";
-                    echo "TC: " . $signer;
+                    $class = '';
+                    $status = '';
                     if ($signed) {
-                        echo " ✓ (" . $signatureDate . ")";
+                        $class = 'signed';
+                        $status = '<span class="signature-date">✓ İmzalandı <br>(' . $signatureDate . ')</span>';
                     } else if ($groupNum === $currentGroup) {
-                        echo " (Bekleniyor)";
+                        $class = 'waiting';
+                        $status = '<span class="signature-status">İmza Bekleniyor</span>';
                     }
+
+                    echo "<li class='" . $class . "'>";
+                    echo "<strong>TC: " . $signer . "</strong>";
+                    echo $status;
                     echo "</li>";
                 }
                 echo "</ul>";
-
-                // Aktif grup bilgisi
-                if ($groupNum === $currentGroup) {
-                    echo "<p><strong>Aktif Grup</strong></p>";
-                }
-
                 echo "</div>";
             }
             echo "</div>";
-
             echo "</div>";
         }
     }

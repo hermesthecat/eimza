@@ -13,13 +13,16 @@ class SignatureManager
     /**
      * Karma imza sürecini başlat (Zincir + Paralel)
      */
-    public function initSignatureProcess($fileInfo, $signatureOptions, $signatureGroups)
+    public function initSignatureProcess($fileInfo, $signatureOptions, $signatureGroups, $signatureType = 'chain')
     {
         try {
             $totalSignatures = 0;
             foreach ($signatureGroups as $group) {
                 $totalSignatures += count($group['signers']);
             }
+
+            // İmza tipi kontrolü
+            $signatureType = in_array($signatureType, ['chain', 'parallel']) ? $signatureType : 'chain';
 
             $sql = "INSERT INTO signatures (
                 filename, original_filename, file_size, signature_format,
@@ -28,14 +31,16 @@ class SignatureManager
                 signature_location, signature_reason,
                 ip_address, status,
                 signature_groups, current_group,
-                group_signatures, group_status
+                group_signatures, group_status,
+                signature_type
             ) VALUES (
                 :filename, :original_filename, :file_size, :signature_format,
                 :pos_x, :pos_y, :width, :height,
                 :location, :reason,
                 :ip_address, 'pending',
                 :signature_groups, 1,
-                :group_signatures, :group_status
+                :group_signatures, :group_status,
+                :signature_type
             )";
 
             // Grup verilerini doğrula
@@ -79,7 +84,8 @@ class SignatureManager
                     'ip_address' => $_SERVER['REMOTE_ADDR'],
                     'signature_groups' => $jsonGroups,
                     'group_signatures' => $jsonSignatures,
-                    'group_status' => $jsonStatus
+                    'group_status' => $jsonStatus,
+                    'signature_type' => $signatureType
                 ]);
             } catch (PDOException $e) {
                 $this->logger->error('Database insert error:', [
@@ -104,7 +110,7 @@ class SignatureManager
     public function checkSignaturePermission($filename, $certificateSerialNumber)
     {
         try {
-            $sql = "SELECT signature_groups, current_group, group_signatures, group_status
+            $sql = "SELECT signature_groups, current_group, group_signatures, group_status, signature_type
                    FROM signatures WHERE filename = :filename";
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['filename' => $filename]);
@@ -123,10 +129,15 @@ class SignatureManager
                 throw new Exception('İmza grubu verileri geçersiz.');
             }
 
-            // Önceki grupların hepsi tamamlanmış olmalı
-            for ($i = 1; $i < $currentGroup; $i++) {
-                if (!isset($groupStatus[$i]) || $groupStatus[$i] !== 'completed') {
-                    throw new Exception('Önceki imza grubu henüz tamamlanmamış.');
+            // İmza tipine göre kontrol
+            $signatureType = $result['signature_type'];
+            
+            // Zincir imza ise, önceki grupların hepsi tamamlanmış olmalı
+            if ($signatureType === 'chain') {
+                for ($i = 1; $i < $currentGroup; $i++) {
+                    if (!isset($groupStatus[$i]) || $groupStatus[$i] !== 'completed') {
+                        throw new Exception('Önceki imza grubu henüz tamamlanmamış.');
+                    }
                 }
             }
 
