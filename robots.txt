@@ -1,0 +1,15 @@
+User-agent: *
+Disallow: /uploads/
+Disallow: /temp/
+Disallow: /includes/
+Disallow: /logs/
+Disallow: /config.php
+Disallow: /error.php
+Disallow: /.htaccess
+
+Allow: /
+Allow: /index.php
+Allow: /assets/css/
+Allow: /assets/img/
+
+Sitemap: /sitemap.xml

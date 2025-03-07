@@ -1,0 +1,19 @@
+Deny from all
+
+# Disable PHP execution
+<Files *.php>
+    Deny from all
+</Files>
+
+# Prevent viewing of .log files
+<Files ~ "\.log$">
+    Deny from all
+</Files>
+
+# Disable directory listing
+Options -Indexes
+
+# Prevent access to all files
+<FilesMatch ".*">
+    Deny from all
+</FilesMatch>

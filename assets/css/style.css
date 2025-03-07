@@ -1,0 +1,99 @@
+/* Custom styles for PDF Signing Application */
+
+.card {
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+}
+
+.card-header {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    border-bottom: none;
+    padding: 1.5rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+}
+
+.btn-primary {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    border: none;
+    padding: 0.75rem 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,123,255,0.3);
+}
+
+#uploadForm {
+    padding: 1.5rem;
+}
+
+.input-group {
+    margin-bottom: 0.5rem;
+}
+
+.modal-content {
+    border: none;
+    border-radius: 1rem;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    
+    .card {
+        margin: 0.5rem;
+    }
+}
+
+/* File input custom styling */
+.form-control[type="file"] {
+    padding: 0.75rem;
+    cursor: pointer;
+}
+
+/* Progress bar styling */
+.progress {
+    height: 1.5rem;
+    border-radius: 0.75rem;
+    margin: 1rem 0;
+}
+
+.progress-bar {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    padding: 1rem;
+}
+
+.alert-danger {
+    background-color: #fff5f5;
+    border-color: #feb2b2;
+    color: #c53030;
+}
+
+.alert-success {
+    background-color: #f0fff4;
+    border-color: #9ae6b4;
+    color: #2f855a;
+}
