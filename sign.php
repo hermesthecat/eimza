@@ -39,10 +39,13 @@ try {
         throw new Exception('Dosya kaydedilemedi.');
     }
 
-    // Get server URL for the uploaded file
-    $fileUrl = 'http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '') . '://' . 
-               $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/uploads/' . $filename;
-
+    // Get server protocol and host
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
+    $host = $_SERVER['HTTP_HOST'];
+    
+    // Create file URL using just the host and uploads path
+    $fileUrl = $protocol . $host . '/uploads/' . $filename;
+    
     // Prepare sign protocol URL
     $request = [
         'resources' => [
@@ -60,8 +63,7 @@ try {
                 ]
             ]
         ],
-        'responseUrl' => 'http' . (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 's' : '') . '://' . 
-                        $_SERVER['HTTP_HOST'] . dirname($_SERVER['REQUEST_URI']) . '/verify.php'
+        'responseUrl' => $protocol . $host . '/verify.php'
     ];
 
     // Generate sign protocol URL
