@@ -23,21 +23,7 @@
 
     <div class="container py-5">
         <!-- Alert Messages -->
-        <?php if (isset($_SESSION['error'])): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="fas fa-exclamation-circle me-2"></i>
-                <?php echo $_SESSION['error']; unset($_SESSION['error']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
-
-        <?php if (isset($_SESSION['success'])): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="fas fa-check-circle me-2"></i>
-                <?php echo $_SESSION['success']; unset($_SESSION['success']); ?>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        <?php endif; ?>
+        <div id="alertArea"></div>
 
         <div class="row justify-content-center">
             <div class="col-md-8">
@@ -48,7 +34,7 @@
                         </h4>
                     </div>
                     <div class="card-body">
-                        <form action="sign.php" method="POST" enctype="multipart/form-data" id="uploadForm">
+                        <form id="uploadForm">
                             <div class="mb-4">
                                 <label for="pdfFile" class="form-label">
                                     <i class="fas fa-file-pdf me-2"></i>PDF Dosyası Seçin
@@ -121,7 +107,7 @@
             <div class="modal-content">
                 <div class="modal-body text-center p-4">
                     <div class="spinner-border text-primary mb-3" role="status"></div>
-                    <h5>İmzalama işlemi devam ediyor...</h5>
+                    <h5>İşlem devam ediyor...</h5>
                     <p class="text-muted mb-0">Lütfen bekleyin...</p>
                 </div>
             </div>
@@ -143,39 +129,88 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // Show loading modal on form submit
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
-            // Basic client-side validation
+        // Show alert function
+        function showAlert(message, type = 'danger') {
+            const alertHtml = `
+                <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${type === 'danger' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            `;
+            document.getElementById('alertArea').innerHTML = alertHtml;
+        }
+
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // Basic validation
             const fileInput = document.getElementById('pdfFile');
-            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            const maxSize = 10 * 1024 * 1024; // 10MB
+
+            if (!fileInput.files.length) {
+                showAlert('Lütfen bir PDF dosyası seçin');
+                return;
+            }
 
             if (fileInput.files[0].size > maxSize) {
-                e.preventDefault();
-                alert('Dosya boyutu çok büyük! Maksimum boyut: 10MB');
+                showAlert('Dosya boyutu çok büyük! Maksimum boyut: 10MB');
                 return;
             }
 
-            if (!fileInput.files[0].type.includes('pdf')) {
-                e.preventDefault();
-                alert('Lütfen sadece PDF dosyası yükleyin!');
-                return;
-            }
+            // Show progress modal
+            const progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+            progressModal.show();
 
-            var myModal = new bootstrap.Modal(document.getElementById('progressModal'));
-            myModal.show();
+            try {
+                // Create FormData
+                const formData = new FormData(this);
+
+                // Send file to server
+                const response = await fetch('sign.php', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.error || 'Beklenmeyen bir hata oluştu');
+                }
+
+                // Hide progress modal
+                progressModal.hide();
+
+                // Create hidden iframe for sign protocol
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+                iframe.src = result.signUrl;
+
+                // Remove iframe after a delay
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 1000);
+
+            } catch (error) {
+                progressModal.hide();
+                showAlert(error.message);
+            }
         });
 
         // Reset form function
         function resetForm() {
             document.getElementById('uploadForm').reset();
+            document.getElementById('alertArea').innerHTML = '';
         }
 
         // File size validation on change
         document.getElementById('pdfFile').addEventListener('change', function(e) {
-            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
-            if (this.files[0].size > maxSize) {
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            if (this.files[0] && this.files[0].size > maxSize) {
                 this.value = ''; // Clear the input
-                alert('Dosya boyutu çok büyük! Maksimum boyut: 10MB');
+                showAlert('Dosya boyutu çok büyük! Maksimum boyut: 10MB');
             }
         });
     </script>
