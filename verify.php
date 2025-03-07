@@ -19,7 +19,15 @@ class SignedPDF extends TCPDF
             $startY = -10 - (count($this->signatureInfo['signatures']) * 20); // Her imza için 20mm
             $this->SetY($startY);
             $this->SetFont('helvetica', 'B', 8);
-            $this->Cell(0, 10, 'İmza Bilgileri:', 0, 1, 'L');
+            // İmza tipi gösterimi
+            $signatureTypes = [
+                'chain' => 'Zincir İmza',
+                'parallel' => 'Paralel İmza',
+                'mixed' => 'Karışık İmza'
+            ];
+            $type = $signatureTypes[$this->signatureInfo['signature_type']] ?? 'Tekli İmza';
+            
+            $this->Cell(0, 10, 'İmza Bilgileri (' . $type . '):', 0, 1, 'L');
 
             $this->SetFont('helvetica', '', 8);
             foreach ($this->signatureInfo['signatures'] as $index => $signature) {
@@ -64,24 +72,31 @@ try {
         throw new Exception('İmza bilgisi bulunamadı');
     }
 
-    // Check if this person is the next signer
-    $signatureManager->checkNextSigner($filename, $response['certificateSerialNumber']);
-
-    // Get next signer from the request
-    $nextSigner = $_POST['next_signer'] ?? null;
-
     // Extract filename from source URL
     $sourceUrl = $resource['source'];
     $filename = basename(parse_url($sourceUrl, PHP_URL_PATH));
 
-    // Update signature chain in database
-    $isCompleted = $signatureManager->updateSignatureChain($filename, [
+    // Check if this person is the next signer
+    $signatureManager->checkNextSigner($filename, $response['certificateSerialNumber']);
+
+    // Get signature record to check the type
+    $signatureRecord = $signatureManager->getSignatureRecord($filename);
+    if (!$signatureRecord) {
+        throw new Exception('İmza kaydı bulunamadı');
+    }
+
+    // Get next signer from the request (paralel imza için gerekli değil)
+    $nextSigner = $signatureRecord['signature_type'] === 'parallel' ? null : ($_POST['next_signer'] ?? null);
+
+    // Update group signature in database
+    $isCompleted = $signatureManager->updateGroupSignature($filename, [
         'certificateName' => $response['certificateName'] ?? null,
         'certificateIssuer' => $response['certificateIssuer'] ?? null,
         'certificateSerialNumber' => $response['certificateSerialNumber'] ?? null,
         'createdAt' => $response['createdAt'] ?? date('Y-m-d H:i:s'),
-        'signature' => $resource['signature']
-    ], $nextSigner);
+        'signature' => $resource['signature'],
+        'signed_pdf_path' => null // PDF oluşturulduktan sonra güncellenecek
+    ]);
 
     // Add signature information to PDF footer for multiple signatures
     $signatureInfo = [
@@ -142,7 +157,8 @@ try {
 
         $pdf->setSignatureInfo([
             'signatures' => $allSignatures,
-            'completed' => $isCompleted
+            'completed' => $isCompleted,
+            'signature_type' => $signatureRecord['signature_type']
         ]);
 
         // Add content from original PDF

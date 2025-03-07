@@ -475,4 +475,57 @@ class SignatureManager
             return [];
         }
     }
+
+    /**
+     * Bir sonraki imzacının doğru kişi olup olmadığını kontrol et
+     */
+    public function checkNextSigner($filename, $certificateSerialNumber)
+    {
+        try {
+            $sql = "SELECT signature_groups, current_group, group_status, signature_type
+                   FROM signatures WHERE filename = :filename";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['filename' => $filename]);
+            $result = $stmt->fetch();
+
+            if (!$result) {
+                throw new Exception('İmza kaydı bulunamadı.');
+            }
+
+            $signatureGroups = json_decode($result['signature_groups'], true);
+            $currentGroup = $result['current_group'];
+            $groupStatus = json_decode($result['group_status'], true);
+            $signatureType = $result['signature_type'];
+
+            if (!$signatureGroups || !$groupStatus) {
+                throw new Exception('İmza grubu verileri geçersiz.');
+            }
+
+            // İmza tipi kontrolü
+            if ($signatureType === 'chain' || $signatureType === 'mixed') {
+                // Önceki grupların tamamlanma kontrolü
+                for ($i = 1; $i < $currentGroup; $i++) {
+                    if (!isset($groupStatus[$i]) || $groupStatus[$i] !== 'completed') {
+                        throw new Exception('Önceki imza grubu henüz tamamlanmamış.');
+                    }
+                }
+            }
+
+            // Mevcut gruptaki imzacıları kontrol et
+            if (!isset($signatureGroups[$currentGroup - 1]) ||
+                !isset($signatureGroups[$currentGroup - 1]['signers'])) {
+                throw new Exception('Geçersiz grup yapısı.');
+            }
+
+            $currentSigners = $signatureGroups[$currentGroup - 1]['signers'];
+            if (!in_array($certificateSerialNumber, $currentSigners)) {
+                throw new Exception('Bu belgeyi imzalama yetkiniz yok.');
+            }
+
+            return true;
+        } catch (PDOException $e) {
+            $this->logger->error('Database error while checking next signer: ' . $e->getMessage());
+            throw new Exception('İmzacı kontrolü yapılamadı.');
+        }
+    }
 }
