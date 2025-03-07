@@ -25,6 +25,7 @@ $totalPages = ceil($totalSignatures / $perPage);
 ?>
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,13 +34,30 @@ $totalPages = ceil($totalSignatures / $perPage);
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
     <style>
-        .status-badge { font-size: 0.85em; }
-        .group-status { border-left: 3px solid; padding-left: 10px; margin: 5px 0; }
-        .group-status.pending { border-color: #ffc107; }
-        .group-status.completed { border-color: #198754; }
-        .tab-content { padding: 20px 0; }
+        .status-badge {
+            font-size: 0.85em;
+        }
+
+        .group-status {
+            border-left: 3px solid;
+            padding-left: 10px;
+            margin: 5px 0;
+        }
+
+        .group-status.pending {
+            border-color: #ffc107;
+        }
+
+        .group-status.completed {
+            border-color: #198754;
+        }
+
+        .tab-content {
+            padding: 20px 0;
+        }
     </style>
 </head>
+
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
@@ -90,93 +108,94 @@ $totalPages = ceil($totalSignatures / $perPage);
                         </thead>
                         <tbody>
                             <?php foreach ($signatures as $signature): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($signature['id']) ?></td>
-                                <td>
-                                    <?= htmlspecialchars($signature['original_filename']) ?>
-                                    <?php if ($signature['status'] === 'completed'): ?>
-                                        <a href="../uploads/<?= htmlspecialchars($signature['filename']) ?>"
-                                            target="_blank" class="text-primary ms-2">
-                                            <i class="fas fa-download"></i>
-                                        </a>
-                                    <?php endif; ?>
-                                </td>
-                                <td>
-                                    <?php
-                                    if (!empty($signature['signature_groups'])) {
-                                        $groups = json_decode($signature['signature_groups'], true);
-                                        if (count($groups) > 1) {
-                                            echo '<span class="badge bg-info">Karma İmza</span>';
-                                        } else {
-                                            echo '<span class="badge bg-primary">İmza Zinciri</span>';
-                                        }
-                                    } else {
-                                        echo '<span class="badge bg-secondary">Tekli İmza</span>';
-                                    }
-                                    ?>
-                                </td>
-                                <td><?= htmlspecialchars($signature['signature_format']) ?></td>
-                                <td>
-                                    <?php
-                                    $statusClass = [
-                                        'pending' => 'warning',
-                                        'completed' => 'success',
-                                        'failed' => 'danger'
-                                    ][$signature['status']];
-                                    $statusText = [
-                                        'pending' => 'Bekliyor',
-                                        'completed' => 'Tamamlandı',
-                                        'failed' => 'Başarısız'
-                                    ][$signature['status']];
-                                    ?>
-                                    <span class="badge bg-<?= $statusClass ?>">
-                                        <?= $statusText ?>
-                                    </span>
-                                </td>
-                                <td>
-                                    <?php
-                                    if (!empty($signature['signature_groups'])) {
-                                        $groups = json_decode($signature['signature_groups'], true);
-                                        $groupStatus = json_decode($signature['group_status'], true);
-                                        $currentGroup = $signature['current_group'];
+                                <tr>
+                                    <td><?= htmlspecialchars($signature['id']) ?></td>
+                                    <td>
+                                        <?= htmlspecialchars($signature['original_filename']) ?>
+                                        <?php if ($signature['status'] === 'completed'): ?>
+                                            <a href="../uploads/<?= htmlspecialchars($signature['filename']) ?>"
+                                                target="_blank" class="text-primary ms-2">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $signatureType = $signature['signature_type'] ?? 'single';
+                                        $typeInfo = [
+                                            'chain' => ['text' => 'Zincir İmza', 'class' => 'primary', 'icon' => 'link'],
+                                            'parallel' => ['text' => 'Paralel İmza', 'class' => 'info', 'icon' => 'users'],
+                                            'mixed' => ['text' => 'Karışık İmza', 'class' => 'warning', 'icon' => 'random'],
+                                            'single' => ['text' => 'Tekli İmza', 'class' => 'secondary', 'icon' => 'user']
+                                        ][$signatureType];
+                                        ?>
+                                        <span class="badge bg-<?= $typeInfo['class'] ?>">
+                                            <i class="fas fa-<?= $typeInfo['icon'] ?> me-1"></i>
+                                            <?= $typeInfo['text'] ?>
+                                        </span>
+                                    </td>
+                                    <td><?= htmlspecialchars($signature['signature_format']) ?></td>
+                                    <td>
+                                        <?php
+                                        $statusClass = [
+                                            'pending' => 'warning',
+                                            'completed' => 'success',
+                                            'failed' => 'danger'
+                                        ][$signature['status']];
+                                        $statusText = [
+                                            'pending' => 'Bekliyor',
+                                            'completed' => 'Tamamlandı',
+                                            'failed' => 'Başarısız'
+                                        ][$signature['status']];
+                                        ?>
+                                        <span class="badge bg-<?= $statusClass ?>">
+                                            <?= $statusText ?>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        if (!empty($signature['signature_groups'])) {
+                                            $groups = json_decode($signature['signature_groups'], true);
+                                            $groupStatus = json_decode($signature['group_status'], true);
+                                            $currentGroup = $signature['current_group'];
 
-                                        foreach ($groups as $index => $group) {
-                                            $groupNum = $index + 1;
-                                            $status = $groupStatus[$groupNum] ?? 'pending';
-                                            ?>
-                                            <div class="group-status <?= $status ?>">
-                                                Grup <?= $groupNum ?>: 
-                                                <span class="badge bg-<?= $status === 'completed' ? 'success' : 'warning' ?>">
-                                                    <?= ucfirst($status) ?>
-                                                </span>
-                                                <?php if ($groupNum === $currentGroup): ?>
-                                                    <small class="text-primary">(Aktif)</small>
-                                                <?php endif; ?>
-                                            </div>
-                                            <?php
+                                            foreach ($groups as $index => $group) {
+                                                $groupNum = $index + 1;
+                                                $status = $groupStatus[$groupNum] ?? 'pending';
+                                        ?>
+                                                <div class="group-status <?= $status ?>">
+                                                    Grup <?= $groupNum ?>:
+                                                    <span class="badge bg-<?= $status === 'completed' ? 'success' : 'warning' ?>">
+                                                        <?= ucfirst($status) ?>
+                                                    </span>
+                                                    <?php if ($groupNum === $currentGroup): ?>
+                                                        <small class="text-primary">(Aktif)</small>
+                                                    <?php endif; ?>
+                                                </div>
+                                        <?php
+                                            }
+                                        } else {
+                                            echo '-';
                                         }
-                                    } else {
-                                        echo '-';
-                                    }
-                                    ?>
-                                </td>
-                                <td><?= date('d.m.Y H:i', strtotime($signature['created_at'])) ?></td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-info"
-                                        onclick="showDetails(<?= htmlspecialchars(json_encode($signature)) ?>)">
-                                        <i class="fas fa-info-circle"></i>
-                                    </button>
-                                    <?php if ($signature['status'] === 'failed'): ?>
-                                        <form method="POST" action="retry.php" class="d-inline">
-                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                                            <input type="hidden" name="id" value="<?= htmlspecialchars($signature['id']) ?>">
-                                            <button type="submit" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-redo"></i>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
+                                        ?>
+                                    </td>
+                                    <td><?= date('d.m.Y H:i', strtotime($signature['created_at'])) ?></td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info"
+                                            onclick="showDetails(<?= htmlspecialchars(json_encode($signature)) ?>)">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                        <?php if ($signature['status'] === 'failed'): ?>
+                                            <form method="POST" action="retry.php" class="d-inline">
+                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                                                <input type="hidden" name="id" value="<?= htmlspecialchars($signature['id']) ?>">
+                                                <button type="submit" class="btn btn-sm btn-warning">
+                                                    <i class="fas fa-redo"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -287,7 +306,9 @@ $totalPages = ceil($totalSignatures / $perPage);
     <script>
         $(document).ready(function() {
             $('#signaturesTable').DataTable({
-                order: [[0, 'desc']],
+                order: [
+                    [0, 'desc']
+                ],
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/tr.json'
                 },
@@ -305,18 +326,19 @@ $totalPages = ceil($totalSignatures / $perPage);
             $('#ipAddress').text(signature.ip_address);
 
             // İmza tipi ve durumu
-            let signatureType = 'Tekli İmza';
-            if (signature.signature_groups) {
-                const groups = JSON.parse(signature.signature_groups);
-                signatureType = groups.length > 1 ? 'Karma İmza' : 'İmza Zinciri';
-            }
-            $('#signatureType').text(signatureType);
+            const typeMap = {
+                'chain': 'Zincir İmza (gruplar sırayla imzalar)',
+                'parallel': 'Paralel İmza (tüm gruplar aynı anda imzalar)',
+                'mixed': 'Karışık İmza (gruplar sıralı, grup içi paralel)',
+                'single': 'Tekli İmza'
+            };
+            $('#signatureType').text(typeMap[signature.signature_type || 'single']);
 
             const statusText = {
                 'pending': 'Bekliyor',
                 'completed': 'Tamamlandı',
                 'failed': 'Başarısız'
-            }[signature.status];
+            } [signature.status];
             $('#generalStatus').text(statusText);
             $('#lastUpdate').text(new Date(signature.created_at).toLocaleString('tr-TR'));
 
@@ -331,11 +353,15 @@ $totalPages = ceil($totalSignatures / $perPage);
                     const groupNum = index + 1;
                     const status = groupStatus[groupNum];
                     const signatures = groupSignatures[groupNum] || [];
-                    
+
                     groupsHtml += `
                         <div class="card mb-3">
                             <div class="card-header d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">Grup ${groupNum}</h6>
+                                <h6 class="mb-0">
+                                    ${signature.signature_type === 'parallel' ? 'Paralel' :
+                                      signature.signature_type === 'mixed' ? 'Karma' : ''}
+                                    Grup ${groupNum}
+                                </h6>
                                 <span class="badge bg-${status === 'completed' ? 'success' : 'warning'}">
                                     ${status === 'completed' ? 'Tamamlandı' : 'Bekliyor'}
                                 </span>
@@ -419,4 +445,5 @@ $totalPages = ceil($totalSignatures / $perPage);
         }
     </script>
 </body>
+
 </html>

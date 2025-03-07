@@ -22,7 +22,7 @@ class SignatureManager
             }
 
             // İmza tipi kontrolü
-            $signatureType = in_array($signatureType, ['chain', 'parallel']) ? $signatureType : 'chain';
+            $signatureType = in_array($signatureType, ['chain', 'parallel', 'mixed']) ? $signatureType : 'chain';
 
             $sql = "INSERT INTO signatures (
                 filename, original_filename, file_size, signature_format,
@@ -131,14 +131,16 @@ class SignatureManager
 
             // İmza tipine göre kontrol
             $signatureType = $result['signature_type'];
-            
-            // Zincir imza ise, önceki grupların hepsi tamamlanmış olmalı
-            if ($signatureType === 'chain') {
+
+            // Zincir veya karışık imza ise, önceki grupların hepsi tamamlanmış olmalı
+            if ($signatureType === 'chain' || $signatureType === 'mixed') {
                 for ($i = 1; $i < $currentGroup; $i++) {
                     if (!isset($groupStatus[$i]) || $groupStatus[$i] !== 'completed') {
                         throw new Exception('Önceki imza grubu henüz tamamlanmamış.');
                     }
                 }
+            } else if ($signatureType === 'parallel') {
+                // Paralel imzada önceki grupların tamamlanması beklenmez
             }
 
             // Şu anki grubun imzacıları arasında olmalı
@@ -223,13 +225,27 @@ class SignatureManager
 
             if ($isGroupCompleted) {
                 $groupStatus[$currentGroup] = 'completed';
+                $signatureType = $current['signature_type'];
 
-                // Başka grup var mı kontrol et
-                if ($currentGroup < count($signatureGroups)) {
-                    $currentGroup++;
-                    $status = 'pending';
-                } else {
-                    $status = 'completed';
+                // Grup tamamlandığında ne yapılacağına karar ver
+                if ($signatureType === 'chain' || $signatureType === 'mixed') {
+                    // Zincir veya karışık imzada sırayla ilerle
+                    if ($currentGroup < count($signatureGroups)) {
+                        $currentGroup++;
+                        $status = 'pending';
+                    } else {
+                        $status = 'completed';
+                    }
+                } else if ($signatureType === 'parallel') {
+                    // Paralel imzada tüm gruplar tamamlandı mı kontrol et
+                    $allCompleted = true;
+                    foreach ($groupStatus as $status) {
+                        if ($status !== 'completed') {
+                            $allCompleted = false;
+                            break;
+                        }
+                    }
+                    $status = $allCompleted ? 'completed' : 'pending';
                 }
             } else {
                 $status = 'pending';

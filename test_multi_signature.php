@@ -318,12 +318,12 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
     <h1>Çoklu İmza Test Sayfası</h1>
 
     <div class="step">
-        <h2>Adım 1: PDF Yükle ve İmza Sürecini Başlat</h2>
+        <h2>PDF Yükle ve İmza Sürecini Başlat</h2>
         <form method="post" enctype="multipart/form-data">
             <p>
                 <input type="file" name="pdf_file" accept=".pdf" required>
             </p>
-            
+
             <!-- İmza Tipi Seçimi -->
             <div class="signature-type-selection">
                 <p><strong>İmza Tipi Seçin:</strong></p>
@@ -335,6 +335,11 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                 <label>
                     <input type="radio" name="signature_type" value="parallel"> Paralel İmza
                     <span class="tooltip">(Tüm gruplar aynı anda imzalayabilir)</span>
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="signature_type" value="mixed"> Karışık İmza
+                    <span class="tooltip">(Gruplar sıralı, grup içi paralel imzalama)</span>
                 </label>
             </div>
 
@@ -360,16 +365,18 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                         radio.addEventListener('change', function(e) {
                             const signatureType = e.target.value;
                             const groups = document.querySelectorAll('.group');
-                            
+
                             groups.forEach(function(group) {
                                 const groupTitle = group.querySelector('h3');
                                 const groupNum = group.dataset.group;
-                                
+
+                                let title = `Grup ${groupNum}:`;
                                 if (signatureType === 'parallel') {
-                                    groupTitle.textContent = `Paralel Grup ${groupNum}:`;
-                                } else {
-                                    groupTitle.textContent = `Grup ${groupNum}:`;
+                                    title = `Paralel Grup ${groupNum}:`;
+                                } else if (signatureType === 'mixed') {
+                                    title = `Karma Grup ${groupNum}:`;
                                 }
+                                groupTitle.textContent = title;
                             });
                         });
                     });
@@ -398,7 +405,12 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                         groupDiv.className = 'group';
                         groupDiv.dataset.group = newGroupNum;
 
-                        const groupTitle = signatureType === 'parallel' ? `Paralel Grup ${newGroupNum}:` : `Grup ${newGroupNum}:`;
+                        let groupTitle = `Grup ${newGroupNum}:`;
+                        if (signatureType === 'parallel') {
+                            groupTitle = `Paralel Grup ${newGroupNum}:`;
+                        } else if (signatureType === 'mixed') {
+                            groupTitle = `Karma Grup ${newGroupNum}:`;
+                        }
 
                         groupDiv.innerHTML = `
                             <h3>${groupTitle}</h3>
@@ -495,7 +507,7 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                 $groupNum = $index + 1;
                 echo "<div class='group-status'>";
                 echo "<h4>Grup " . $groupNum . "</h4>";
-                
+
                 // Grup durumu badge'i
                 $statusClass = '';
                 $statusText = '';

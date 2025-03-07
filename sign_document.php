@@ -212,18 +212,26 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                 $totalSigners += count($group['signers']);
                                             }
 
-                                            if ($totalGroups > 1) {
-                                                $signatureType = 'Zincir İmza';
-                                                $iconType = 'link';
-                                                $badgeClass = 'bg-indigo';
-                                            } elseif (isset($groups[0]) && count($groups[0]['signers']) > 1) {
-                                                $signatureType = 'Paralel İmza';
-                                                $iconType = 'users';
-                                                $badgeClass = 'bg-info';
-                                            } else {
-                                                $signatureType = 'Tek İmza';
-                                                $iconType = 'user';
-                                                $badgeClass = 'bg-primary';
+                                            switch ($signature['signature_type']) {
+                                                case 'chain':
+                                                    $signatureType = 'Zincir İmza';
+                                                    $iconType = 'link';
+                                                    $badgeClass = 'bg-indigo';
+                                                    break;
+                                                case 'parallel':
+                                                    $signatureType = 'Paralel İmza';
+                                                    $iconType = 'users';
+                                                    $badgeClass = 'bg-info';
+                                                    break;
+                                                case 'mixed':
+                                                    $signatureType = 'Karışık İmza';
+                                                    $iconType = 'random';
+                                                    $badgeClass = 'bg-warning';
+                                                    break;
+                                                default:
+                                                    $signatureType = 'Tek İmza';
+                                                    $iconType = 'user';
+                                                    $badgeClass = 'bg-primary';
                                             }
                                         }
                                         ?>
@@ -249,12 +257,25 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                     if ($groupStatus[$groupNum] === 'completed') {
                                                         $badgeClass = 'bg-success'; // Tamamlandı (yeşil)
                                                     } elseif ($groupNum === $currentGroup) {
-                                                        $badgeClass = 'bg-warning'; // Aktif (sarı)
+                                                        if ($signature['signature_type'] === 'mixed') {
+                                                            $badgeClass = 'bg-info'; // Karışık imzada aktif grup (mavi)
+                                                        } else {
+                                                            $badgeClass = 'bg-warning'; // Normal aktif grup (sarı)
+                                                        }
                                                     }
                                                     ?>
                                                     <span class="badge <?= $badgeClass ?>">
                                                         <?php
-                                                        echo "Grup " . $groupNum;
+                                                        $groupPrefix = "Grup";
+                                                        switch ($signature['signature_type']) {
+                                                            case 'parallel':
+                                                                $groupPrefix = "Paralel Grup";
+                                                                break;
+                                                            case 'mixed':
+                                                                $groupPrefix = "Karma Grup";
+                                                                break;
+                                                        }
+                                                        echo $groupPrefix . " " . $groupNum;
                                                         if ($groupStatus[$groupNum] === 'completed') {
                                                             echo ' <i class="fas fa-check"></i>';
                                                         } elseif ($groupNum === $currentGroup) {
@@ -290,14 +311,35 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                         </div>
                                                         <div class="modal-body">
-                                                            <p>
+                                                            <div class="mb-3">
                                                                 <strong>Belge:</strong>
                                                                 <?= htmlspecialchars($signature['original_filename']) ?>
-                                                            </p>
-                                                            <p>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <strong>İmza Tipi:</strong>
+                                                                <?php
+                                                                $tipAciklama = '';
+                                                                switch ($signature['signature_type']) {
+                                                                    case 'chain':
+                                                                        $tipAciklama = 'Zincir İmza (gruplar sırayla imzalar)';
+                                                                        break;
+                                                                    case 'parallel':
+                                                                        $tipAciklama = 'Paralel İmza (tüm gruplar aynı anda imzalar)';
+                                                                        break;
+                                                                    case 'mixed':
+                                                                        $tipAciklama = 'Karışık İmza (gruplar sıralı, grup içi paralel imza)';
+                                                                        break;
+                                                                }
+                                                                echo $tipAciklama;
+                                                                ?>
+                                                            </div>
+                                                            <div class="mb-3">
                                                                 <strong>Mevcut Grup:</strong>
                                                                 <?= $currentGroup ?>
-                                                            </p>
+                                                                <?php if ($signature['signature_type'] === 'mixed'): ?>
+                                                                    <small class="text-muted d-block">Bu gruptaki tüm imzacılar aynı anda imzalayabilir.</small>
+                                                                <?php endif; ?>
+                                                            </div>
                                                             <form method="post">
                                                                 <input type="hidden" name="filename"
                                                                     value="<?= htmlspecialchars($signature['filename']) ?>">

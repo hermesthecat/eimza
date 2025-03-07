@@ -30,11 +30,11 @@ CREATE TABLE signatures (
     current_group INT DEFAULT 1,
     group_signatures JSON,
     group_status JSON,
-    signature_type ENUM('chain', 'parallel') DEFAULT 'chain',
+    signature_type ENUM('chain', 'parallel', 'mixed') DEFAULT 'chain',
     INDEX idx_filename (filename),
     INDEX idx_certificate_serial (certificate_serial_number),
     INDEX idx_status (status),
     INDEX idx_created_at (created_at),
     INDEX idx_next_signer (next_signer),
     INDEX idx_current_group (current_group)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
