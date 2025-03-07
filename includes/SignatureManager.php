@@ -11,6 +11,136 @@ class SignatureManager
     }
 
     /**
+     * İmza zinciri başlat
+     */
+    public function initSignatureChain($fileInfo, $signatureOptions, $requiredSigners)
+    {
+        try {
+            $sql = "INSERT INTO signatures (
+                filename, original_filename, file_size, signature_format,
+                pdf_signature_pos_x, pdf_signature_pos_y,
+                pdf_signature_width, pdf_signature_height,
+                signature_location, signature_reason,
+                ip_address, status,
+                required_signatures, next_signer,
+                signature_chain
+            ) VALUES (
+                :filename, :original_filename, :file_size, :signature_format,
+                :pos_x, :pos_y, :width, :height,
+                :location, :reason,
+                :ip_address, 'pending',
+                :required_signatures, :next_signer,
+                :signature_chain
+            )";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                'filename' => $fileInfo['filename'],
+                'original_filename' => $fileInfo['original_name'],
+                'file_size' => $fileInfo['size'],
+                'signature_format' => $signatureOptions['format'],
+                'pos_x' => $signatureOptions['x'],
+                'pos_y' => $signatureOptions['y'],
+                'width' => $signatureOptions['width'],
+                'height' => $signatureOptions['height'],
+                'location' => $signatureOptions['location'],
+                'reason' => $signatureOptions['reason'],
+                'ip_address' => $_SERVER['REMOTE_ADDR'],
+                'required_signatures' => count($requiredSigners),
+                'next_signer' => $requiredSigners[0],
+                'signature_chain' => json_encode([])
+            ]);
+
+            return $this->db->lastInsertId();
+        } catch (PDOException $e) {
+            $this->logger->error('Database error while initializing signature chain: ' . $e->getMessage());
+            throw new Exception('İmza zinciri başlatılamadı.');
+        }
+    }
+
+    /**
+     * Sıradaki imzacıyı kontrol et
+     */
+    public function checkNextSigner($filename, $certificateSerialNumber)
+    {
+        try {
+            $sql = "SELECT next_signer FROM signatures WHERE filename = :filename";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['filename' => $filename]);
+            $result = $stmt->fetch();
+
+            if (!$result) {
+                throw new Exception('İmza kaydı bulunamadı.');
+            }
+
+            if ($result['next_signer'] !== $certificateSerialNumber) {
+                throw new Exception('Bu dosyayı imzalama sırası sizde değil.');
+            }
+
+            return true;
+        } catch (PDOException $e) {
+            $this->logger->error('Database error while checking next signer: ' . $e->getMessage());
+            throw new Exception('Sıradaki imzacı kontrolü yapılamadı.');
+        }
+    }
+
+    /**
+     * İmza zincirini güncelle
+     */
+    public function updateSignatureChain($filename, $signatureData, $nextSigner = null)
+    {
+        try {
+            // Mevcut imza zincirini al
+            $sql = "SELECT signature_chain, completed_signatures, required_signatures FROM signatures WHERE filename = :filename";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['filename' => $filename]);
+            $current = $stmt->fetch();
+
+            if (!$current) {
+                throw new Exception('İmza kaydı bulunamadı.');
+            }
+
+            // Yeni imza bilgisini ekle
+            $chain = json_decode($current['signature_chain'], true) ?: [];
+            $chain[] = [
+                'certificateName' => $signatureData['certificateName'],
+                'certificateIssuer' => $signatureData['certificateIssuer'],
+                'certificateSerialNumber' => $signatureData['certificateSerialNumber'],
+                'signatureDate' => $signatureData['createdAt'],
+                'signature' => $signatureData['signature']
+            ];
+
+            // Completed signatures sayısını artır
+            $completedSignatures = $current['completed_signatures'] + 1;
+            
+            // Tüm imzalar tamamlandı mı kontrol et
+            $status = ($completedSignatures >= $current['required_signatures']) ? 'completed' : 'pending';
+
+            // Güncelle
+            $sql = "UPDATE signatures SET
+                signature_chain = :chain,
+                completed_signatures = :completed,
+                next_signer = :next_signer,
+                status = :status
+                WHERE filename = :filename";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                'chain' => json_encode($chain),
+                'completed' => $completedSignatures,
+                'next_signer' => $nextSigner,
+                'status' => $status,
+                'filename' => $filename
+            ]);
+
+            return $completedSignatures >= $current['required_signatures'];
+        } catch (PDOException $e) {
+            $this->logger->error('Database error while updating signature chain: ' . $e->getMessage());
+            throw new Exception('İmza zinciri güncellenemedi.');
+        }
+    }
+
+    /**
      * İmza işlemini veritabanına kaydet
      */
     public function createSignatureRecord($fileInfo, $signatureOptions)

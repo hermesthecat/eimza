@@ -12,12 +12,24 @@ class SignedPDF extends TCPDF {
     }
     
     public function Footer() {
-        if (!empty($this->signatureInfo)) {
-            $this->SetY(-30);
+        if (!empty($this->signatureInfo['signatures'])) {
+            $startY = -10 - (count($this->signatureInfo['signatures']) * 20); // Her imza için 20mm
+            $this->SetY($startY);
+            $this->SetFont('helvetica', 'B', 8);
+            $this->Cell(0, 10, 'İmza Bilgileri:', 0, 1, 'L');
+            
             $this->SetFont('helvetica', '', 8);
-            $this->Cell(0, 10, 'İmzalayan: ' . ($this->signatureInfo['certificate_name'] ?? ''), 0, 1, 'L');
-            $this->Cell(0, 10, 'İmza Tarihi: ' . ($this->signatureInfo['signature_date'] ?? ''), 0, 1, 'L');
-            $this->Cell(0, 10, 'Sertifika No: ' . ($this->signatureInfo['certificate_serial_number'] ?? ''), 0, 1, 'L');
+            foreach ($this->signatureInfo['signatures'] as $index => $signature) {
+                $this->Cell(0, 5, ($index + 1) . '. İmza:', 0, 1, 'L');
+                $this->Cell(0, 5, '    İmzalayan: ' . ($signature['certificate_name'] ?? ''), 0, 1, 'L');
+                $this->Cell(0, 5, '    İmza Tarihi: ' . ($signature['signature_date'] ?? ''), 0, 1, 'L');
+                $this->Cell(0, 5, '    Sertifika No: ' . ($signature['certificate_serial_number'] ?? ''), 0, 1, 'L');
+            }
+
+            if (!empty($this->signatureInfo['completed'])) {
+                $this->SetFont('helvetica', 'B', 8);
+                $this->Cell(0, 5, 'Tüm imzalar tamamlanmıştır.', 0, 1, 'L');
+            }
         }
     }
 }
@@ -49,19 +61,32 @@ try {
         throw new Exception('İmza bilgisi bulunamadı');
     }
 
+    // Check if this person is the next signer
+    $signatureManager->checkNextSigner($filename, $response['certificateSerialNumber']);
+
+    // Get next signer from the request
+    $nextSigner = $_POST['next_signer'] ?? null;
+
     // Extract filename from source URL
     $sourceUrl = $resource['source'];
     $filename = basename(parse_url($sourceUrl, PHP_URL_PATH));
 
-    // Update signature record in database
-    $signatureManager->updateSignatureResult($filename, [
+    // Update signature chain in database
+    $isCompleted = $signatureManager->updateSignatureChain($filename, [
         'certificateName' => $response['certificateName'] ?? null,
         'certificateIssuer' => $response['certificateIssuer'] ?? null,
         'certificateSerialNumber' => $response['certificateSerialNumber'] ?? null,
         'createdAt' => $response['createdAt'] ?? date('Y-m-d H:i:s'),
-        'signature' => $resource['signature'],
-        'signed_pdf_path' => $signedPdfPath ?? null
-    ]);
+        'signature' => $resource['signature']
+    ], $nextSigner);
+
+    // Add signature information to PDF footer for multiple signatures
+    $signatureInfo = [
+        'certificate_name' => $signatureRecord['certificate_name'],
+        'signature_date' => $signatureRecord['signature_date'],
+        'certificate_serial_number' => $signatureRecord['certificate_serial_number'],
+        'signature_chain' => json_decode($signatureRecord['signature_chain'] ?? '[]', true)
+    ];
 
     // Get updated signature record
     $signatureRecord = $signatureManager->getSignatureRecord($filename);
@@ -104,11 +129,17 @@ try {
         $pdf->SetAuthor($signatureRecord['certificate_name']);
         $pdf->SetTitle('İmzalı Belge');
 
-        // Set signature information for footer
-        $pdf->setSignatureInfo([
+        // Set signature information for footer with all signatures in chain
+        $signatureChain = json_decode($signatureRecord['signature_chain'] ?? '[]', true);
+        $allSignatures = array_merge($signatureChain, [[
             'certificate_name' => $signatureRecord['certificate_name'],
             'signature_date' => $signatureRecord['signature_date'],
             'certificate_serial_number' => $signatureRecord['certificate_serial_number']
+        ]]);
+
+        $pdf->setSignatureInfo([
+            'signatures' => $allSignatures,
+            'completed' => $isCompleted
         ]);
 
         // Add content from original PDF

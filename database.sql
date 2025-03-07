@@ -21,8 +21,14 @@ CREATE TABLE signatures (
     status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
     error_message TEXT,
     signed_pdf_path VARCHAR(255),
+    signature_chain JSON,
+    required_signatures INT DEFAULT 1,
+    completed_signatures INT DEFAULT 0,
+    next_signer VARCHAR(255),
+    signature_deadline DATETIME,
     INDEX idx_filename (filename),
     INDEX idx_certificate_serial (certificate_serial_number),
     INDEX idx_status (status),
-    INDEX idx_created_at (created_at)
+    INDEX idx_created_at (created_at),
+    INDEX idx_next_signer (next_signer)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
