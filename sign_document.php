@@ -25,23 +25,27 @@ if (isset($_POST['sign']) && isset($_POST['filename'])) {
 
         // İmza yetkisi kontrolü
         if ($signatureManager->checkSignaturePermission($filename, $certificateNo)) {
-            // Burada gerçek imzalama işlemi yapılacak
-            // Şimdilik test amaçlı dummy veri
-            $signatureData = [
-                'certificateName' => 'Test User',
-                'certificateIssuer' => 'Test CA',
-                'certificateSerialNumber' => $certificateNo,
-                'createdAt' => date('Y-m-d H:i:s'),
-                'signature' => 'test_signature_' . uniqid(),
-                'signed_pdf_path' => 'signed/' . $filename
-            ];
+            // İmza URL'i oluştur
+            $signUrl = sprintf(
+                "kolay-e-imza://sign?documentId=%s&serialNo=%s&signatureType=pades",
+                urlencode($filename),
+                urlencode($certificateNo)
+            );
 
-            $completed = $signatureManager->updateGroupSignature($filename, $signatureData);
-            if ($completed) {
-                $success = 'Belge başarıyla imzalandı ve süreç tamamlandı.';
-            } else {
-                $success = 'Belge başarıyla imzalandı. Diğer imzalar bekleniyor.';
-            }
+            // JavaScript ile gizli iframe oluştur
+            echo '<script>
+                const iframe = document.createElement("iframe");
+                iframe.style.display = "none";
+                document.body.appendChild(iframe);
+                iframe.src = "' . $signUrl . '";
+                
+                // İframe\'i 1 saniye sonra kaldır
+                setTimeout(() => {
+                    document.body.removeChild(iframe);
+                }, 1000);
+            </script>';
+
+            $success = 'İmza işlemi başlatıldı. İmzalama uygulaması açılacaktır.';
         }
     } catch (Exception $e) {
         $error = $e->getMessage();
