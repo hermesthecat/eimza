@@ -27,9 +27,6 @@ define('MAX_FILE_SIZE', 10 * 1024 * 1024); // 10MB in bytes
 define('ALLOWED_EXTENSIONS', ['pdf']);
 define('ALLOWED_MIME_TYPES', ['application/pdf']);
 
-// Kolay Imza settings
-define('KOLAY_IMZA_PATH', 'C:\\Program Files (x86)\\KolayImza\\AltiKare.KolayImza.exe');
-
 // Database configuration
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'eimza_db');
