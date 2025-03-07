@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/config.php';
 if (isset($_POST['create'])) {
-    require_once('tcpdf/tcpdf.php');
+    require_once __DIR__ . '/tcpdf/tcpdf.php';
 
     // Initialize TCPDF
     $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
@@ -23,9 +24,10 @@ if (isset($_POST['create'])) {
     $pdf->MultiCell(0, 10, 'Bu PDF dosyası, imzalama özelliğini test etmek için oluşturulmuştur. İmzalandıktan sonra, bu metnin altında imza bilgileri görünmelidir.', 0, 'L');
 
     // Save PDF
-    $pdf->Output('uploads/test.pdf', 'F');
+    $output_file = UPLOAD_DIR . 'test.pdf';
+    $pdf->Output($output_file, 'F');
 
-    echo '<div style="color: green; margin: 20px;">Test PDF başarıyla oluşturuldu: uploads/test.pdf</div>';
+    echo '<div style="color: green; margin: 20px;">Test PDF başarıyla oluşturuldu: ' . htmlspecialchars($output_file) . '</div>';
 }
 ?>
 <!DOCTYPE html>

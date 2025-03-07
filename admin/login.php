@@ -3,8 +3,6 @@ require_once '../config.php';
 require_once '../includes/logger.php';
 require_once 'auth.php';
 
-session_start();
-
 // Zaten giriş yapmışsa signatures.php'ye yönlendir
 if (isAdminLoggedIn()) {
     header('Location: signatures.php');
