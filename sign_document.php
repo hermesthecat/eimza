@@ -28,10 +28,10 @@ if (isset($_POST['sign']) && isset($_POST['filename'])) {
             // Base URL'i belirle
             $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https://" : "http://");
             $host = $_SERVER['HTTP_HOST'];
-            
+
             // Callback URL'i oluştur
             $callbackUrl = $protocol . $host . dirname($_SERVER['PHP_SELF']) . "/complete_signature.php";
-            
+
             // Dosya URL'i oluştur
             $fileUrl = $protocol . $host . dirname($_SERVER['PHP_SELF']) . "/uploads/" . $filename;
 
@@ -59,7 +59,7 @@ if (isset($_POST['sign']) && isset($_POST['filename'])) {
             $signUrl = 'sign://?xsjson=' . base64_encode(json_encode($request));
 
             // Modal içeriğini hazırla
-            ?>
+?>
             <div class="modal fade" id="signModal" tabindex="-1" data-bs-backdrop="static">
                 <div class="modal-dialog modal-dialog-centered">
                     <div class="modal-content">
@@ -81,28 +81,18 @@ if (isset($_POST['sign']) && isset($_POST['filename'])) {
             </div>
 
             <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Modal'ı göster
-                const modal = new bootstrap.Modal(document.getElementById('signModal'));
-                modal.show();
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Modal'ı göster
+                    const modal = new bootstrap.Modal(document.getElementById('signModal'));
+                    modal.show();
 
-                // İmzalama işlemini başlat
-                setTimeout(() => {
-                    const iframe = document.createElement('iframe');
-                    iframe.style.display = 'none';
-                    document.body.appendChild(iframe);
-                    iframe.src = '<?php echo $signUrl; ?>';
-
-                    // Modal'ı kapat ve iframe'i kaldır
+                    // 1 saniye sonra imzalama protokolünü başlat
                     setTimeout(() => {
-                        modal.hide();
-                        document.body.removeChild(iframe);
-                        location.reload(); // Sayfayı yenile
-                    }, 2000);
-                }, 1000);
-            });
+                        window.location.href = '<?php echo $signUrl; ?>';
+                    }, 1000);
+                });
             </script>
-            <?php
+<?php
 
             $success = 'İmza işlemi başlatılıyor...';
         }
@@ -116,6 +106,7 @@ $signatures = $signatureManager->getRecentSignatures(50);
 ?>
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -128,11 +119,13 @@ $signatures = $signatureManager->getRecentSignatures(50);
         .status-badge {
             min-width: 100px;
         }
-        .table > :not(caption) > * > * {
+
+        .table> :not(caption)>*>* {
             vertical-align: middle;
         }
     </style>
 </head>
+
 <body class="bg-light">
     <div class="container py-4">
         <h1 class="mb-4">
@@ -169,7 +162,7 @@ $signatures = $signatureManager->getRecentSignatures(50);
                         </thead>
                         <tbody>
                             <?php foreach ($signatures as $signature): ?>
-                                <?php 
+                                <?php
                                 $groups = json_decode($signature['signature_groups'], true);
                                 $groupStatus = json_decode($signature['group_status'], true);
                                 $currentGroup = $signature['current_group'];
@@ -214,10 +207,10 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                     </td>
                                     <td>
                                         <?php if ($signature['status'] === 'pending'): ?>
-                                            <button type="button" 
-                                                    class="btn btn-primary btn-sm"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#signModal<?= $signature['id'] ?>">
+                                            <button type="button"
+                                                class="btn btn-primary btn-sm"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#signModal<?= $signature['id'] ?>">
                                                 <i class="fas fa-signature me-1"></i>
                                                 İmzala
                                             </button>
@@ -235,7 +228,7 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                         </div>
                                                         <div class="modal-body">
                                                             <p>
-                                                                <strong>Belge:</strong> 
+                                                                <strong>Belge:</strong>
                                                                 <?= htmlspecialchars($signature['original_filename']) ?>
                                                             </p>
                                                             <p>
@@ -243,14 +236,14 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                                 <?= $currentGroup ?>
                                                             </p>
                                                             <form method="post">
-                                                                <input type="hidden" name="filename" 
-                                                                       value="<?= htmlspecialchars($signature['filename']) ?>">
+                                                                <input type="hidden" name="filename"
+                                                                    value="<?= htmlspecialchars($signature['filename']) ?>">
                                                                 <div class="mb-3">
                                                                     <label for="certificate_no" class="form-label">
                                                                         TC Kimlik No
                                                                     </label>
-                                                                    <input type="text" class="form-control" 
-                                                                           id="certificate_no" name="certificate_no" required>
+                                                                    <input type="text" class="form-control"
+                                                                        id="certificate_no" name="certificate_no" required>
                                                                 </div>
                                                                 <button type="submit" name="sign" class="btn btn-primary">
                                                                     <i class="fas fa-signature me-1"></i>
@@ -268,8 +261,8 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                             </button>
                                         <?php endif; ?>
 
-                                        <a href="verify.php?file=<?= urlencode($signature['filename']) ?>" 
-                                           class="btn btn-info btn-sm">
+                                        <a href="verify.php?file=<?= urlencode($signature['filename']) ?>"
+                                            class="btn btn-info btn-sm">
                                             <i class="fas fa-search me-1"></i>
                                             Detay
                                         </a>
@@ -293,4 +286,5 @@ $signatures = $signatureManager->getRecentSignatures(50);
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>
