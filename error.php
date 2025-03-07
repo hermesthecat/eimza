@@ -22,6 +22,7 @@ Logger::getInstance()->error("HTTP Error {$code}: {$_SERVER['REQUEST_URI']}");
 ?>
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -38,18 +39,21 @@ Logger::getInstance()->error("HTTP Error {$code}: {$_SERVER['REQUEST_URI']}");
             text-align: center;
             padding: 2rem;
         }
+
         .error-code {
             font-size: 8rem;
             font-weight: bold;
             color: #dc3545;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
             margin-bottom: 1rem;
         }
+
         .error-icon {
             font-size: 5rem;
             color: #dc3545;
             margin-bottom: 2rem;
         }
+
         .error-message {
             font-size: 1.2rem;
             color: #6c757d;
@@ -57,6 +61,7 @@ Logger::getInstance()->error("HTTP Error {$code}: {$_SERVER['REQUEST_URI']}");
         }
     </style>
 </head>
+
 <body class="bg-light">
     <div class="error-page">
         <div class="container">
@@ -78,4 +83,5 @@ Logger::getInstance()->error("HTTP Error {$code}: {$_SERVER['REQUEST_URI']}");
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

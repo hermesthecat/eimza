@@ -15,6 +15,7 @@ This document outlines the plan for creating a simple PDF signing application us
     *   Initialize a PHP project in the directory.
     *   Install the Bootstrap CSS framework.
     *   Set up a local web server (e.g., Apache, Nginx) to host the application.
+    *   Set up a database connection (e.g., MySQL, PostgreSQL).
 3.  **Create Basic UI with Bootstrap:**
     *   Create an HTML form with Bootstrap styling for uploading the PDF file and submitting the signing request.
     *   Include fields for any additional parameters required by the Kolay Imza API, such as signature format or options.
@@ -25,18 +26,23 @@ This document outlines the plan for creating a simple PDF signing application us
     *   Write PHP code to construct the API request with the necessary parameters, including the uploaded PDF file.
     *   Use a PHP HTTP client (e.g., cURL) to send the API request to the Kolay Imza API endpoint.
     *   Handle the API response and extract the signed PDF document.
-6.  **Display Signed PDF:**
+6.  **Implement Database Logging:**
+    *   Create a database table to store signature information (e.g., filename, signature details, timestamp).
+    *   Write PHP code to insert signature details into the database after successful signing.
+7.  **Display Signed PDF:**
     *   Write PHP code to display the signed PDF document in the browser.
     *   Provide an option to download the signed PDF file.
-7.  **Implement Error Handling:**
+8.  **Implement Error Handling:**
     *   Implement error handling throughout the application to catch any exceptions or errors that may occur.
     *   Display user-friendly error messages to the user.
-8.  **Test Thoroughly:**
+9.  **Test Thoroughly:**
     *   Test the application thoroughly with different PDF files and signature options.
     *   Verify that the signed PDF documents are valid and meet the required standards.
-9.  **Deploy Application:**
+    *   Verify that signature information is correctly stored in the database.
+10. **Deploy Application:**
     *   Deploy the application to a production web server.
     *   Configure the web server to handle the PDF file uploads and API requests.
+    *   Configure the database connection.
 
 ## Mermaid Diagram
 
@@ -46,7 +52,8 @@ graph LR
     B --> C{Create Basic UI with Bootstrap};
     C --> D[Implement PDF Upload Functionality];
     D --> E[Call Kolay Imza API to Sign PDF];
-    E --> F[Display Signed PDF];
-    F --> G{Implement Error Handling};
-    G --> H{Test Thoroughly};
-    H --> I(Deploy Application);
+    E --> F[Implement Database Logging];
+    F --> G[Display Signed PDF];
+    G --> H{Implement Error Handling};
+    H --> I{Test Thoroughly};
+    I --> J(Deploy Application);

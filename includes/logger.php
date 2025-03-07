@@ -1,28 +1,33 @@
 <?php
-class Logger {
+class Logger
+{
     private $logFile;
     private static $instance = null;
 
-    private function __construct() {
+    private function __construct()
+    {
         $this->logFile = __DIR__ . '/../logs/app.log';
         $this->ensureLogDirectoryExists();
     }
 
-    public static function getInstance() {
+    public static function getInstance()
+    {
         if (self::$instance === null) {
             self::$instance = new Logger();
         }
         return self::$instance;
     }
 
-    private function ensureLogDirectoryExists() {
+    private function ensureLogDirectoryExists()
+    {
         $logDir = dirname($this->logFile);
         if (!file_exists($logDir)) {
             mkdir($logDir, 0777, true);
         }
     }
 
-    public function log($message, $level = 'INFO') {
+    public function log($message, $level = 'INFO')
+    {
         $timestamp = date('Y-m-d H:i:s');
         $logMessage = sprintf(
             "[%s] [%s] %s%s",
@@ -35,45 +40,52 @@ class Logger {
         error_log($logMessage, 3, $this->logFile);
     }
 
-    public function error($message) {
+    public function error($message)
+    {
         $this->log($message, 'ERROR');
     }
 
-    public function info($message) {
+    public function info($message)
+    {
         $this->log($message, 'INFO');
     }
 
-    public function debug($message) {
+    public function debug($message)
+    {
         if (DEBUG_MODE) {
             $this->log($message, 'DEBUG');
         }
     }
 
-    public function warning($message) {
+    public function warning($message)
+    {
         $this->log($message, 'WARNING');
     }
 
-    public function getLogPath() {
+    public function getLogPath()
+    {
         return $this->logFile;
     }
 
-    public function clearLog() {
+    public function clearLog()
+    {
         if (file_exists($this->logFile)) {
             unlink($this->logFile);
         }
     }
 
-    public function rotateLogs() {
+    public function rotateLogs()
+    {
         if (file_exists($this->logFile)) {
             $maxSize = 5 * 1024 * 1024; // 5MB
             if (filesize($this->logFile) > $maxSize) {
                 $backup = $this->logFile . '.' . date('Y-m-d-H-i-s') . '.bak';
                 rename($this->logFile, $backup);
-                
+
                 // Keep only last 5 backup files
                 $backups = glob($this->logFile . '.*.bak');
                 if (count($backups) > 5) {
-                    usort($backups, function($a, $b) {
+                    usort($backups, function ($a, $b) {
                         return filemtime($a) - filemtime($b);
                     });
                     while (count($backups) > 5) {

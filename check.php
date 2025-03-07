@@ -35,7 +35,7 @@ foreach ($directories as $dir => $required_perms) {
     $exists = file_exists($real_path);
     $writable = is_writable($real_path);
     $perms = $exists ? substr(sprintf('%o', fileperms($real_path)), -4) : 'N/A';
-    
+
     $checks["Directory: " . basename($dir)] = [
         'required' => $required_perms,
         'current' => $exists ? ($writable ? "Writable ($perms)" : "Not writable ($perms)") : 'Does not exist',
@@ -71,19 +71,21 @@ foreach ($settings as $setting => $required_value) {
     ];
 }
 
-function compare_php_values($current, $required) {
+function compare_php_values($current, $required)
+{
     // Convert shortcuts like "2M" to bytes for comparison
     $current_bytes = convert_php_value_to_bytes($current);
     $required_bytes = convert_php_value_to_bytes($required);
     return $current_bytes >= $required_bytes;
 }
 
-function convert_php_value_to_bytes($value) {
+function convert_php_value_to_bytes($value)
+{
     $value = trim($value);
-    $last = strtolower($value[strlen($value)-1]);
+    $last = strtolower($value[strlen($value) - 1]);
     $value = (int)$value;
-    
-    switch($last) {
+
+    switch ($last) {
         case 'g':
             $value *= 1024;
         case 'm':
@@ -91,7 +93,7 @@ function convert_php_value_to_bytes($value) {
         case 'k':
             $value *= 1024;
     }
-    
+
     return $value;
 }
 
@@ -110,6 +112,7 @@ foreach ($checks as $check) {
 ?>
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -118,6 +121,7 @@ foreach ($checks as $check) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
 </head>
+
 <body class="bg-light">
     <div class="container py-5">
         <div class="row justify-content-center">
@@ -201,4 +205,5 @@ foreach ($checks as $check) {
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

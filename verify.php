@@ -20,7 +20,7 @@ try {
     }
 
     $resource = $response['resources'][0];
-    
+
     // Validate signature
     if (!isset($resource['signature'])) {
         throw new Exception('İmza bilgisi bulunamadı');
@@ -49,10 +49,9 @@ try {
             'date' => $response['createdAt']
         ]
     ]);
-
 } catch (Exception $e) {
     Logger::getInstance()->error('Signature verification error: ' . $e->getMessage());
-    
+
     header('Content-Type: application/json');
     echo json_encode([
         'success' => false,

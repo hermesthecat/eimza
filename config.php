@@ -32,7 +32,8 @@ if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
 session_start();
 
 // Error handling function
-function handleError($message, $redirect = true) {
+function handleError($message, $redirect = true)
+{
     $_SESSION['error'] = $message;
     if ($redirect) {
         header('Location: index.php');
@@ -41,7 +42,8 @@ function handleError($message, $redirect = true) {
 }
 
 // Success handling function
-function handleSuccess($message, $redirect = true) {
+function handleSuccess($message, $redirect = true)
+{
     $_SESSION['success'] = $message;
     if ($redirect) {
         header('Location: index.php');
@@ -50,13 +52,15 @@ function handleSuccess($message, $redirect = true) {
 }
 
 // Validate file extension
-function isAllowedExtension($filename) {
+function isAllowedExtension($filename)
+{
     $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
     return in_array($ext, ALLOWED_EXTENSIONS);
 }
 
 // Clean filename
-function sanitizeFilename($filename) {
+function sanitizeFilename($filename)
+{
     // Remove any character that is not alphanumeric, dot, dash or underscore
     $filename = preg_replace("/[^a-zA-Z0-9.-_]/", "", $filename);
     // Remove any runs of dots

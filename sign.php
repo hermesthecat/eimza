@@ -10,8 +10,8 @@ try {
 
     // Validate file upload
     if (!isset($_FILES['pdfFile']) || $_FILES['pdfFile']['error'] !== UPLOAD_ERR_OK) {
-        $errorMessage = isset($_FILES['pdfFile']) ? 
-            'Dosya yükleme hatası: ' . $_FILES['pdfFile']['error'] : 
+        $errorMessage = isset($_FILES['pdfFile']) ?
+            'Dosya yükleme hatası: ' . $_FILES['pdfFile']['error'] :
             'Dosya yüklenemedi';
         throw new Exception($errorMessage);
     }
@@ -42,10 +42,10 @@ try {
     // Get server protocol and host
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
     $host = $_SERVER['HTTP_HOST'];
-    
+
     // Create file URL using just the host and uploads path
     $fileUrl = $protocol . $host . '/uploads/' . $filename;
-    
+
     // Prepare sign protocol URL
     $request = [
         'resources' => [
@@ -76,7 +76,6 @@ try {
         'signUrl' => $signUrl
     ]);
     exit;
-
 } catch (Exception $e) {
     // Clean up uploaded file if exists
     if (isset($uploadPath) && file_exists($uploadPath)) {
