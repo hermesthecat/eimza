@@ -11,13 +11,21 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
 <html>
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Çoklu İmza Test Sayfası</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="assets/css/style.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
-            padding: 40px;
             background: #f0f2f5;
             color: #1a1a1a;
             line-height: 1.6;
@@ -346,102 +354,102 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
     <div class="container py-4">
         <h1>Çoklu İmza Test Sayfası</h1>
 
-    <div class="step">
-        <h2>PDF Yükle ve İmza Sürecini Başlat</h2>
-        <form method="post" enctype="multipart/form-data">
-            <p>
-                <input type="file" name="pdf_file" accept=".pdf" required>
-            </p>
+        <div class="step">
+            <h2>PDF Yükle ve İmza Sürecini Başlat</h2>
+            <form method="post" enctype="multipart/form-data">
+                <p>
+                    <input type="file" name="pdf_file" accept=".pdf" required>
+                </p>
 
-            <!-- İmza Tipi Seçimi -->
-            <div class="signature-type-selection">
-                <p><strong>İmza Tipi Seçin:</strong></p>
-                <label>
-                    <input type="radio" name="signature_type" value="chain" checked> İmza Zinciri
-                    <span class="tooltip">(İmzalar sırayla, bir grup diğerinden sonra)</span>
-                </label>
-                <br>
-                <label>
-                    <input type="radio" name="signature_type" value="parallel"> Paralel İmza
-                    <span class="tooltip">(Tüm gruplar aynı anda imzalayabilir)</span>
-                </label>
-                <br>
-                <label>
-                    <input type="radio" name="signature_type" value="mixed"> Karışık İmza
-                    <span class="tooltip">(Gruplar sıralı, grup içi paralel imzalama)</span>
-                </label>
-            </div>
+                <!-- İmza Tipi Seçimi -->
+                <div class="signature-type-selection">
+                    <p><strong>İmza Tipi Seçin:</strong></p>
+                    <label>
+                        <input type="radio" name="signature_type" value="chain" checked> İmza Zinciri
+                        <span class="tooltip">(İmzalar sırayla, bir grup diğerinden sonra)</span>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio" name="signature_type" value="parallel"> Paralel İmza
+                        <span class="tooltip">(Tüm gruplar aynı anda imzalayabilir)</span>
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio" name="signature_type" value="mixed"> Karışık İmza
+                        <span class="tooltip">(Gruplar sıralı, grup içi paralel imzalama)</span>
+                    </label>
+                </div>
 
-            <div id="signatureGroups">
-                <strong>İmza Grupları:</strong><br>
-                <div class="group" data-group="1">
-                    <h3>Grup 1:</h3>
-                    <div class="signers">
-                        <input type="text" name="groups[1][]" placeholder="TC Kimlik No" required>
-                        <button type="button" class="addSigner">+ İmzacı Ekle</button>
+                <div id="signatureGroups">
+                    <strong>İmza Grupları:</strong><br>
+                    <div class="group" data-group="1">
+                        <h3>Grup 1:</h3>
+                        <div class="signers">
+                            <input type="text" name="groups[1][]" placeholder="TC Kimlik No" required>
+                            <button type="button" class="addSigner">+ İmzacı Ekle</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="form-actions">
-                <button type="button" class="addGroup">+ Yeni Grup Ekle</button>
-                <input type="submit" name="init_process" value="İmza Sürecini Başlat" class="button">
-            </div>
+                <div class="form-actions">
+                    <button type="button" class="addGroup">+ Yeni Grup Ekle</button>
+                    <input type="submit" name="init_process" value="İmza Sürecini Başlat" class="button">
+                </div>
 
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    // İmza tipi seçimi değiştiğinde
-                    document.querySelectorAll('input[name="signature_type"]').forEach(function(radio) {
-                        radio.addEventListener('change', function(e) {
-                            const signatureType = e.target.value;
-                            const groups = document.querySelectorAll('.group');
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // İmza tipi seçimi değiştiğinde
+                        document.querySelectorAll('input[name="signature_type"]').forEach(function(radio) {
+                            radio.addEventListener('change', function(e) {
+                                const signatureType = e.target.value;
+                                const groups = document.querySelectorAll('.group');
 
-                            groups.forEach(function(group) {
-                                const groupTitle = group.querySelector('h3');
-                                const groupNum = group.dataset.group;
+                                groups.forEach(function(group) {
+                                    const groupTitle = group.querySelector('h3');
+                                    const groupNum = group.dataset.group;
 
-                                let title = `Grup ${groupNum}:`;
-                                if (signatureType === 'parallel') {
-                                    title = `Paralel Grup ${groupNum}:`;
-                                } else if (signatureType === 'mixed') {
-                                    title = `Karma Grup ${groupNum}:`;
-                                }
-                                groupTitle.textContent = title;
+                                    let title = `Grup ${groupNum}:`;
+                                    if (signatureType === 'parallel') {
+                                        title = `Paralel Grup ${groupNum}:`;
+                                    } else if (signatureType === 'mixed') {
+                                        title = `Karma Grup ${groupNum}:`;
+                                    }
+                                    groupTitle.textContent = title;
+                                });
                             });
                         });
-                    });
 
-                    // Yeni imzacı ekleme
-                    document.addEventListener('click', function(e) {
-                        if (e.target.classList.contains('addSigner')) {
-                            const group = e.target.closest('.group');
-                            const signersDiv = group.querySelector('.signers');
-                            const groupNum = group.dataset.group;
-                            const input = document.createElement('input');
-                            input.type = 'text';
-                            input.name = `groups[${groupNum}][]`;
-                            input.placeholder = 'TC Kimlik No';
-                            signersDiv.insertBefore(input, e.target);
-                        }
-                    });
+                        // Yeni imzacı ekleme
+                        document.addEventListener('click', function(e) {
+                            if (e.target.classList.contains('addSigner')) {
+                                const group = e.target.closest('.group');
+                                const signersDiv = group.querySelector('.signers');
+                                const groupNum = group.dataset.group;
+                                const input = document.createElement('input');
+                                input.type = 'text';
+                                input.name = `groups[${groupNum}][]`;
+                                input.placeholder = 'TC Kimlik No';
+                                signersDiv.insertBefore(input, e.target);
+                            }
+                        });
 
-                    // Yeni grup ekleme
-                    document.querySelector('.addGroup').addEventListener('click', function() {
-                        const groups = document.querySelectorAll('.group');
-                        const newGroupNum = groups.length + 1;
-                        const signatureType = document.querySelector('input[name="signature_type"]:checked').value;
+                        // Yeni grup ekleme
+                        document.querySelector('.addGroup').addEventListener('click', function() {
+                            const groups = document.querySelectorAll('.group');
+                            const newGroupNum = groups.length + 1;
+                            const signatureType = document.querySelector('input[name="signature_type"]:checked').value;
 
-                        const groupDiv = document.createElement('div');
-                        groupDiv.className = 'group';
-                        groupDiv.dataset.group = newGroupNum;
+                            const groupDiv = document.createElement('div');
+                            groupDiv.className = 'group';
+                            groupDiv.dataset.group = newGroupNum;
 
-                        let groupTitle = `Grup ${newGroupNum}:`;
-                        if (signatureType === 'parallel') {
-                            groupTitle = `Paralel Grup ${newGroupNum}:`;
-                        } else if (signatureType === 'mixed') {
-                            groupTitle = `Karma Grup ${newGroupNum}:`;
-                        }
+                            let groupTitle = `Grup ${newGroupNum}:`;
+                            if (signatureType === 'parallel') {
+                                groupTitle = `Paralel Grup ${newGroupNum}:`;
+                            } else if (signatureType === 'mixed') {
+                                groupTitle = `Karma Grup ${newGroupNum}:`;
+                            }
 
-                        groupDiv.innerHTML = `
+                            groupDiv.innerHTML = `
                             <h3>${groupTitle}</h3>
                             <div class="signers">
                                 <input type="text" name="groups[${newGroupNum}][]" placeholder="TC Kimlik No" required>
@@ -449,157 +457,160 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                             </div>
                         `;
 
-                        document.querySelector('#signatureGroups').appendChild(groupDiv);
+                            document.querySelector('#signatureGroups').appendChild(groupDiv);
+                        });
                     });
-                });
-            </script>
-        </form>
-    </div>
+                </script>
+            </form>
+        </div>
 
-    <?php
-    if (isset($_POST['init_process']) && isset($_FILES['pdf_file'])) {
-        $file = $_FILES['pdf_file'];
-        $groups = $_POST['groups'];
-        $signatureType = $_POST['signature_type'] ?? 'chain';
+        <?php
+        if (isset($_POST['init_process']) && isset($_FILES['pdf_file'])) {
+            $file = $_FILES['pdf_file'];
+            $groups = $_POST['groups'];
+            $signatureType = $_POST['signature_type'] ?? 'chain';
 
-        // Grupları düzenle
-        $signatureGroups = [];
-        foreach ($groups as $groupIndex => $signers) {
-            $signers = array_filter($signers); // Boş değerleri kaldır
-            if (!empty($signers)) {
-                $signatureGroups[] = [
-                    'group_id' => $groupIndex,
-                    'signers' => array_values($signers)
-                ];
+            // Grupları düzenle
+            $signatureGroups = [];
+            foreach ($groups as $groupIndex => $signers) {
+                $signers = array_filter($signers); // Boş değerleri kaldır
+                if (!empty($signers)) {
+                    $signatureGroups[] = [
+                        'group_id' => $groupIndex,
+                        'signers' => array_values($signers)
+                    ];
+                }
             }
-        }
 
-        if (count($signatureGroups) > 0) {
-            $fileInfo = [
-                'filename' => uniqid() . '.pdf',
-                'original_name' => $file['name'],
-                'size' => $file['size']
-            ];
+            if (count($signatureGroups) > 0) {
+                $fileInfo = [
+                    'filename' => uniqid() . '.pdf',
+                    'original_name' => $file['name'],
+                    'size' => $file['size']
+                ];
 
-            // PDF'i uploads klasörüne taşı
-            move_uploaded_file($file['tmp_name'], 'uploads/' . $fileInfo['filename']);
+                // PDF'i uploads klasörüne taşı
+                move_uploaded_file($file['tmp_name'], 'uploads/' . $fileInfo['filename']);
 
-            // İmza sürecini başlat
-            $id = $signatureManager->initSignatureProcess(
-                $fileInfo,
-                [
-                    'format' => 'PadesBes',
-                    'x' => 10,
-                    'y' => 10,
-                    'width' => 190,
-                    'height' => 50,
-                    'location' => 'Test Location',
-                    'reason' => 'Test Reason'
-                ],
-                $signatureGroups,
-                $signatureType
-            );
+                // İmza sürecini başlat
+                $id = $signatureManager->initSignatureProcess(
+                    $fileInfo,
+                    [
+                        'format' => 'PadesBes',
+                        'x' => 10,
+                        'y' => 10,
+                        'width' => 190,
+                        'height' => 50,
+                        'location' => 'Test Location',
+                        'reason' => 'Test Reason'
+                    ],
+                    $signatureGroups,
+                    $signatureType
+                );
 
-            // Başarılı mesajı göster
-            echo "<div class='step'>";
-            echo "<h3>İmza Süreci Başlatıldı</h3>";
-            echo "<p>Dosya ID: " . $id . "</p>";
+                // Başarılı mesajı göster
+                echo "<div class='step'>";
+                echo "<h3>İmza Süreci Başlatıldı</h3>";
+                echo "<p>Dosya ID: " . $id . "</p>";
 
-            foreach ($signatureGroups as $index => $group) {
-                echo "<div class='group-info'>";
-                echo "<h4>Grup " . ($index + 1) . ":</h4>";
-                echo "<p>İmzacılar: " . implode(', ', $group['signers']) . "</p>";
+                foreach ($signatureGroups as $index => $group) {
+                    echo "<div class='group-info'>";
+                    echo "<h4>Grup " . ($index + 1) . ":</h4>";
+                    echo "<p>İmzacılar: " . implode(', ', $group['signers']) . "</p>";
+                    echo "</div>";
+                }
                 echo "</div>";
             }
-            echo "</div>";
         }
-    }
 
-    // İmza durumunu göster
-    if (isset($_GET['check_status'])) {
-        $filename = $_GET['check_status'];
-        $record = $signatureManager->getSignatureRecord($filename);
+        // İmza durumunu göster
+        if (isset($_GET['check_status'])) {
+            $filename = $_GET['check_status'];
+            $record = $signatureManager->getSignatureRecord($filename);
 
-        if ($record) {
-            echo "<div class='step'>";
-            echo "<h3>İmza Durumu</h3>";
-            echo "<p>Dosya: " . $record['original_filename'] . "</p>";
-            echo "<p>Genel Durum: " . $record['status'] . "</p>";
+            if ($record) {
+                echo "<div class='step'>";
+                echo "<h3>İmza Durumu</h3>";
+                echo "<p>Dosya: " . $record['original_filename'] . "</p>";
+                echo "<p>Genel Durum: " . $record['status'] . "</p>";
 
-            $signatureGroups = json_decode($record['signature_groups'], true);
-            $groupSignatures = json_decode($record['group_signatures'], true);
-            $groupStatus = json_decode($record['group_status'], true);
-            $currentGroup = $record['current_group'];
+                $signatureGroups = json_decode($record['signature_groups'], true);
+                $groupSignatures = json_decode($record['group_signatures'], true);
+                $groupStatus = json_decode($record['group_status'], true);
+                $currentGroup = $record['current_group'];
 
-            echo "<div class='groups-status'>";
-            foreach ($signatureGroups as $index => $group) {
-                $groupNum = $index + 1;
-                echo "<div class='group-status'>";
-                echo "<h4>Grup " . $groupNum . "</h4>";
+                echo "<div class='groups-status'>";
+                foreach ($signatureGroups as $index => $group) {
+                    $groupNum = $index + 1;
+                    echo "<div class='group-status'>";
+                    echo "<h4>Grup " . $groupNum . "</h4>";
 
-                // Grup durumu badge'i
-                $statusClass = '';
-                $statusText = '';
-                switch ($groupStatus[$groupNum]) {
-                    case 'completed':
-                        $statusClass = 'completed';
-                        $statusText = 'Tamamlandı';
-                        break;
-                    case 'pending':
-                        $statusClass = $groupNum === $currentGroup ? 'active' : 'pending';
-                        $statusText = $groupNum === $currentGroup ? 'Aktif Grup' : 'Bekliyor';
-                        break;
-                }
-                echo "<div class='status-badge " . $statusClass . "'>" . $statusText . "</div>";
+                    // Grup durumu badge'i
+                    $statusClass = '';
+                    $statusText = '';
+                    switch ($groupStatus[$groupNum]) {
+                        case 'completed':
+                            $statusClass = 'completed';
+                            $statusText = 'Tamamlandı';
+                            break;
+                        case 'pending':
+                            $statusClass = $groupNum === $currentGroup ? 'active' : 'pending';
+                            $statusText = $groupNum === $currentGroup ? 'Aktif Grup' : 'Bekliyor';
+                            break;
+                    }
+                    echo "<div class='status-badge " . $statusClass . "'>" . $statusText . "</div>";
 
-                // İmzacıları göster
-                echo "<ul>";
-                foreach ($group['signers'] as $signer) {
-                    $signed = false;
-                    $signatureDate = '';
+                    // İmzacıları göster
+                    echo "<ul>";
+                    foreach ($group['signers'] as $signer) {
+                        $signed = false;
+                        $signatureDate = '';
 
-                    // İmza kontrolü
-                    if (isset($groupSignatures[$groupNum])) {
-                        foreach ($groupSignatures[$groupNum] as $signature) {
-                            if ($signature['certificateSerialNumber'] === $signer) {
-                                $signed = true;
-                                $signatureDate = $signature['signatureDate'];
-                                break;
+                        // İmza kontrolü
+                        if (isset($groupSignatures[$groupNum])) {
+                            foreach ($groupSignatures[$groupNum] as $signature) {
+                                if ($signature['certificateSerialNumber'] === $signer) {
+                                    $signed = true;
+                                    $signatureDate = $signature['signatureDate'];
+                                    break;
+                                }
                             }
                         }
-                    }
 
-                    $class = '';
-                    $status = '';
-                    if ($signed) {
-                        $class = 'signed';
-                        $status = '<span class="signature-date">✓ İmzalandı <br>(' . $signatureDate . ')</span>';
-                    } else if ($groupNum === $currentGroup) {
-                        $class = 'waiting';
-                        $status = '<span class="signature-status">İmza Bekleniyor</span>';
-                    }
+                        $class = '';
+                        $status = '';
+                        if ($signed) {
+                            $class = 'signed';
+                            $status = '<span class="signature-date">✓ İmzalandı <br>(' . $signatureDate . ')</span>';
+                        } else if ($groupNum === $currentGroup) {
+                            $class = 'waiting';
+                            $status = '<span class="signature-status">İmza Bekleniyor</span>';
+                        }
 
-                    echo "<li class='" . $class . "'>";
-                    echo "<strong>TC: " . $signer . "</strong>";
-                    echo $status;
-                    echo "</li>";
+                        echo "<li class='" . $class . "'>";
+                        echo "<strong>TC: " . $signer . "</strong>";
+                        echo $status;
+                        echo "</li>";
+                    }
+                    echo "</ul>";
+                    echo "</div>";
                 }
-                echo "</ul>";
+                echo "</div>";
                 echo "</div>";
             }
-            echo "</div>";
-            echo "</div>";
         }
-    }
-    ?>
+        ?>
 
-    <div class="step">
-        <h2>İmza Durumu Kontrol Et</h2>
-        <form method="get">
-            <input type="text" name="check_status" placeholder="Dosya adı" required>
-            <input type="submit" value="Durumu Kontrol Et" class="button">
-        </form>
-    </div>
+        <div class="step">
+            <h2>İmza Durumu Kontrol Et</h2>
+            <form method="get">
+                <input type="text" name="check_status" placeholder="Dosya adı" required>
+                <input type="submit" value="Durumu Kontrol Et" class="button">
+            </form>
+        </div>
+
+        <!-- Bootstrap Bundle with Popper -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
