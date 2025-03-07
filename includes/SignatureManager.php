@@ -11,27 +11,40 @@ class SignatureManager
     }
 
     /**
-     * İmza zinciri başlat
+     * Karma imza sürecini başlat (Zincir + Paralel)
      */
-    public function initSignatureChain($fileInfo, $signatureOptions, $requiredSigners)
+    public function initSignatureProcess($fileInfo, $signatureOptions, $signatureGroups)
     {
         try {
+            $totalSignatures = 0;
+            foreach ($signatureGroups as $group) {
+                $totalSignatures += count($group['signers']);
+            }
+
             $sql = "INSERT INTO signatures (
                 filename, original_filename, file_size, signature_format,
                 pdf_signature_pos_x, pdf_signature_pos_y,
                 pdf_signature_width, pdf_signature_height,
                 signature_location, signature_reason,
                 ip_address, status,
-                required_signatures, next_signer,
-                signature_chain
+                signature_groups, current_group,
+                group_signatures, group_status
             ) VALUES (
                 :filename, :original_filename, :file_size, :signature_format,
                 :pos_x, :pos_y, :width, :height,
                 :location, :reason,
                 :ip_address, 'pending',
-                :required_signatures, :next_signer,
-                :signature_chain
+                :signature_groups, 1,
+                :group_signatures, :group_status
             )";
+
+            // Her grup için boş imza dizisi oluştur
+            $groupSignatures = [];
+            $groupStatus = [];
+            foreach ($signatureGroups as $index => $group) {
+                $groupSignatures[$index + 1] = [];
+                $groupStatus[$index + 1] = 'pending';
+            }
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
@@ -46,9 +59,9 @@ class SignatureManager
                 'location' => $signatureOptions['location'],
                 'reason' => $signatureOptions['reason'],
                 'ip_address' => $_SERVER['REMOTE_ADDR'],
-                'required_signatures' => count($requiredSigners),
-                'next_signer' => $requiredSigners[0],
-                'signature_chain' => json_encode([])
+                'signature_groups' => json_encode($signatureGroups),
+                'group_signatures' => json_encode($groupSignatures),
+                'group_status' => json_encode($groupStatus)
             ]);
 
             return $this->db->lastInsertId();
@@ -59,12 +72,13 @@ class SignatureManager
     }
 
     /**
-     * Sıradaki imzacıyı kontrol et
+     * İmzalama yetkisi kontrol et
      */
-    public function checkNextSigner($filename, $certificateSerialNumber)
+    public function checkSignaturePermission($filename, $certificateSerialNumber)
     {
         try {
-            $sql = "SELECT next_signer FROM signatures WHERE filename = :filename";
+            $sql = "SELECT signature_groups, current_group, group_signatures, group_status
+                   FROM signatures WHERE filename = :filename";
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['filename' => $filename]);
             $result = $stmt->fetch();
@@ -73,25 +87,48 @@ class SignatureManager
                 throw new Exception('İmza kaydı bulunamadı.');
             }
 
-            if ($result['next_signer'] !== $certificateSerialNumber) {
-                throw new Exception('Bu dosyayı imzalama sırası sizde değil.');
+            $signatureGroups = json_decode($result['signature_groups'], true);
+            $currentGroup = $result['current_group'];
+            $groupSignatures = json_decode($result['group_signatures'], true);
+            $groupStatus = json_decode($result['group_status'], true);
+
+            // Önceki grupların hepsi tamamlanmış olmalı
+            for ($i = 1; $i < $currentGroup; $i++) {
+                if ($groupStatus[$i] !== 'completed') {
+                    throw new Exception('Önceki imza grubu henüz tamamlanmamış.');
+                }
+            }
+
+            // Şu anki grubun imzacıları arasında olmalı
+            $currentSigners = $signatureGroups[$currentGroup - 1]['signers'];
+            if (!in_array($certificateSerialNumber, $currentSigners)) {
+                throw new Exception('Bu belgeyi imzalama yetkiniz yok.');
+            }
+
+            // Aynı kişi tekrar imzalayamaz
+            $currentGroupSignatures = $groupSignatures[$currentGroup];
+            foreach ($currentGroupSignatures as $signature) {
+                if ($signature['certificateSerialNumber'] === $certificateSerialNumber) {
+                    throw new Exception('Bu belgeyi zaten imzalamışsınız.');
+                }
             }
 
             return true;
         } catch (PDOException $e) {
-            $this->logger->error('Database error while checking next signer: ' . $e->getMessage());
-            throw new Exception('Sıradaki imzacı kontrolü yapılamadı.');
+            $this->logger->error('Database error while checking signature permission: ' . $e->getMessage());
+            throw new Exception('İmza yetkisi kontrolü yapılamadı.');
         }
     }
 
     /**
-     * İmza zincirini güncelle
+     * Grup imzasını güncelle
      */
-    public function updateSignatureChain($filename, $signatureData, $nextSigner = null)
+    public function updateGroupSignature($filename, $signatureData)
     {
         try {
-            // Mevcut imza zincirini al
-            $sql = "SELECT signature_chain, completed_signatures, required_signatures FROM signatures WHERE filename = :filename";
+            // Mevcut durumu al
+            $sql = "SELECT signature_groups, current_group, group_signatures, group_status
+                   FROM signatures WHERE filename = :filename";
             $stmt = $this->db->prepare($sql);
             $stmt->execute(['filename' => $filename]);
             $current = $stmt->fetch();
@@ -100,9 +137,13 @@ class SignatureManager
                 throw new Exception('İmza kaydı bulunamadı.');
             }
 
+            $signatureGroups = json_decode($current['signature_groups'], true);
+            $currentGroup = $current['current_group'];
+            $groupSignatures = json_decode($current['group_signatures'], true);
+            $groupStatus = json_decode($current['group_status'], true);
+
             // Yeni imza bilgisini ekle
-            $chain = json_decode($current['signature_chain'], true) ?: [];
-            $chain[] = [
+            $groupSignatures[$currentGroup][] = [
                 'certificateName' => $signatureData['certificateName'],
                 'certificateIssuer' => $signatureData['certificateIssuer'],
                 'certificateSerialNumber' => $signatureData['certificateSerialNumber'],
@@ -110,30 +151,45 @@ class SignatureManager
                 'signature' => $signatureData['signature']
             ];
 
-            // Completed signatures sayısını artır
-            $completedSignatures = $current['completed_signatures'] + 1;
-            
-            // Tüm imzalar tamamlandı mı kontrol et
-            $status = ($completedSignatures >= $current['required_signatures']) ? 'completed' : 'pending';
+            // Mevcut grup tamamlandı mı kontrol et
+            $currentGroupSigners = $signatureGroups[$currentGroup - 1]['signers'];
+            $currentGroupSignatures = $groupSignatures[$currentGroup];
+            $isGroupCompleted = count($currentGroupSignatures) >= count($currentGroupSigners);
+
+            if ($isGroupCompleted) {
+                $groupStatus[$currentGroup] = 'completed';
+                
+                // Başka grup var mı kontrol et
+                if ($currentGroup < count($signatureGroups)) {
+                    $currentGroup++;
+                    $status = 'pending';
+                } else {
+                    $status = 'completed';
+                }
+            } else {
+                $status = 'pending';
+            }
 
             // Güncelle
             $sql = "UPDATE signatures SET
-                signature_chain = :chain,
-                completed_signatures = :completed,
-                next_signer = :next_signer,
-                status = :status
+                current_group = :current_group,
+                group_signatures = :group_signatures,
+                group_status = :group_status,
+                status = :status,
+                signed_pdf_path = :signed_pdf_path
                 WHERE filename = :filename";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
-                'chain' => json_encode($chain),
-                'completed' => $completedSignatures,
-                'next_signer' => $nextSigner,
+                'current_group' => $currentGroup,
+                'group_signatures' => json_encode($groupSignatures),
+                'group_status' => json_encode($groupStatus),
                 'status' => $status,
+                'signed_pdf_path' => $signatureData['signed_pdf_path'] ?? null,
                 'filename' => $filename
             ]);
 
-            return $completedSignatures >= $current['required_signatures'];
+            return $status === 'completed';
         } catch (PDOException $e) {
             $this->logger->error('Database error while updating signature chain: ' . $e->getMessage());
             throw new Exception('İmza zinciri güncellenemedi.');

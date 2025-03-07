@@ -26,9 +26,14 @@ CREATE TABLE signatures (
     completed_signatures INT DEFAULT 0,
     next_signer VARCHAR(255),
     signature_deadline DATETIME,
+    signature_groups JSON,
+    current_group INT DEFAULT 1,
+    group_signatures JSON,
+    group_status JSON,
     INDEX idx_filename (filename),
     INDEX idx_certificate_serial (certificate_serial_number),
     INDEX idx_status (status),
     INDEX idx_created_at (created_at),
-    INDEX idx_next_signer (next_signer)
+    INDEX idx_next_signer (next_signer),
+    INDEX idx_current_group (current_group)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
