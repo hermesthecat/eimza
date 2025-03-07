@@ -25,27 +25,86 @@ if (isset($_POST['sign']) && isset($_POST['filename'])) {
 
         // İmza yetkisi kontrolü
         if ($signatureManager->checkSignaturePermission($filename, $certificateNo)) {
+            // Base URL'i belirle
+            $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https://" : "http://");
+            $host = $_SERVER['HTTP_HOST'];
+            
+            // Callback URL'i oluştur
+            $callbackUrl = $protocol . $host . dirname($_SERVER['PHP_SELF']) . "/complete_signature.php";
+            
+            // Dosya URL'i oluştur
+            $fileUrl = $protocol . $host . dirname($_SERVER['PHP_SELF']) . "/uploads/" . $filename;
+
+            // İmza isteği hazırla
+            $request = [
+                'resources' => [
+                    [
+                        'source' => $fileUrl,
+                        'format' => 'PadesBes',
+                        'pdfOptions' => [
+                            'x' => 10,
+                            'y' => 10,
+                            'width' => 190,
+                            'height' => 50,
+                            'signatureName' => 'Elektronik İmza',
+                            'reason' => 'Belge İmzalama',
+                            'location' => 'Türkiye'
+                        ]
+                    ]
+                ],
+                'responseUrl' => $callbackUrl
+            ];
+
             // İmza URL'i oluştur
-            $signUrl = sprintf(
-                "kolay-e-imza://sign?documentId=%s&serialNo=%s&signatureType=pades",
-                urlencode($filename),
-                urlencode($certificateNo)
-            );
+            $signUrl = 'sign://?xsjson=' . base64_encode(json_encode($request));
 
-            // JavaScript ile gizli iframe oluştur
-            echo '<script>
-                const iframe = document.createElement("iframe");
-                iframe.style.display = "none";
-                document.body.appendChild(iframe);
-                iframe.src = "' . $signUrl . '";
-                
-                // İframe\'i 1 saniye sonra kaldır
+            // Modal içeriğini hazırla
+            ?>
+            <div class="modal fade" id="signModal" tabindex="-1" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fas fa-signature me-2"></i>
+                                İmza İşlemi
+                            </h5>
+                        </div>
+                        <div class="modal-body text-center">
+                            <div class="mb-3">
+                                <div class="spinner-border text-primary" role="status"></div>
+                            </div>
+                            <h6>İmza işlemi başlatılıyor...</h6>
+                            <p class="text-muted small">İmzalama uygulaması otomatik olarak açılacaktır.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // Modal'ı göster
+                const modal = new bootstrap.Modal(document.getElementById('signModal'));
+                modal.show();
+
+                // İmzalama işlemini başlat
                 setTimeout(() => {
-                    document.body.removeChild(iframe);
-                }, 1000);
-            </script>';
+                    const iframe = document.createElement('iframe');
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                    iframe.src = '<?php echo $signUrl; ?>';
 
-            $success = 'İmza işlemi başlatıldı. İmzalama uygulaması açılacaktır.';
+                    // Modal'ı kapat ve iframe'i kaldır
+                    setTimeout(() => {
+                        modal.hide();
+                        document.body.removeChild(iframe);
+                        location.reload(); // Sayfayı yenile
+                    }, 2000);
+                }, 1000);
+            });
+            </script>
+            <?php
+
+            $success = 'İmza işlemi başlatılıyor...';
         }
     } catch (Exception $e) {
         $error = $e->getMessage();
