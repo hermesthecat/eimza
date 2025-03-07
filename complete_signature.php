@@ -13,9 +13,15 @@ if (!$data) {
 }
 
 // Gerekli alanları kontrol et
-$requiredFields = ['documentId', 'certificateName', 'certificateIssuer', 
-                  'certificateSerialNumber', 'signature', 'createdAt'];
-                  
+$requiredFields = [
+    'documentId',
+    'certificateName',
+    'certificateIssuer',
+    'certificateSerialNumber',
+    'signature',
+    'createdAt'
+];
+
 foreach ($requiredFields as $field) {
     if (!isset($data[$field])) {
         http_response_code(400);
@@ -48,7 +54,6 @@ try {
         'message' => $completed ? 'İmza süreci tamamlandı' : 'İmza eklendi, diğer imzalar bekleniyor',
         'status' => $completed ? 'completed' : 'pending'
     ]);
-
 } catch (Exception $e) {
     Logger::getInstance()->error('İmza tamamlama hatası: ' . $e->getMessage());
     http_response_code(500);

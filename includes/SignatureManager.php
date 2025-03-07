@@ -131,11 +131,13 @@ class SignatureManager
             }
 
             // Şu anki grubun imzacıları arasında olmalı
-            if (!isset($signatureGroups[$currentGroup - 1]) ||
+            if (
+                !isset($signatureGroups[$currentGroup - 1]) ||
                 !is_array($signatureGroups[$currentGroup - 1]) ||
                 !isset($signatureGroups[$currentGroup - 1]['signers']) ||
-                !is_array($signatureGroups[$currentGroup - 1]['signers'])) {
-                
+                !is_array($signatureGroups[$currentGroup - 1]['signers'])
+            ) {
+
                 // Debug bilgisi logla
                 $this->logger->error('Group data error:', [
                     'currentGroup' => $currentGroup,
@@ -210,7 +212,7 @@ class SignatureManager
 
             if ($isGroupCompleted) {
                 $groupStatus[$currentGroup] = 'completed';
-                
+
                 // Başka grup var mı kontrol et
                 if ($currentGroup < count($signatureGroups)) {
                     $currentGroup++;

@@ -123,6 +123,7 @@ $signatures = $signatureManager->getRecentSignatures(50);
         .table> :not(caption)>*>* {
             vertical-align: middle;
         }
+
         .bg-indigo {
             background-color: #6610f2;
         }
@@ -231,10 +232,10 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                             <?= $signatureType ?>
                                         </span>
                                         <?php if ($totalSigners > 0): ?>
-                                        <span class="badge bg-secondary ms-1" title="Toplam İmzacı">
-                                            <i class="fas fa-users me-1"></i>
-                                            <?= $totalSigners ?>
-                                        </span>
+                                            <span class="badge bg-secondary ms-1" title="Toplam İmzacı">
+                                                <i class="fas fa-users me-1"></i>
+                                                <?= $totalSigners ?>
+                                            </span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -244,7 +245,7 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                                     <?php
                                                     $groupNum = $index + 1;
                                                     $badgeClass = 'bg-danger'; // Varsayılan: Bekleyen (kırmızı)
-                                                    
+
                                                     if ($groupStatus[$groupNum] === 'completed') {
                                                         $badgeClass = 'bg-success'; // Tamamlandı (yeşil)
                                                     } elseif ($groupNum === $currentGroup) {

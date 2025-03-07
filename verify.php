@@ -4,20 +4,23 @@ require_once 'includes/logger.php';
 require_once 'includes/SignatureManager.php';
 require_once('tcpdf/tcpdf.php');
 
-class SignedPDF extends TCPDF {
+class SignedPDF extends TCPDF
+{
     protected $signatureInfo = [];
-    
-    public function setSignatureInfo($info) {
+
+    public function setSignatureInfo($info)
+    {
         $this->signatureInfo = $info;
     }
-    
-    public function Footer() {
+
+    public function Footer()
+    {
         if (!empty($this->signatureInfo['signatures'])) {
             $startY = -10 - (count($this->signatureInfo['signatures']) * 20); // Her imza için 20mm
             $this->SetY($startY);
             $this->SetFont('helvetica', 'B', 8);
             $this->Cell(0, 10, 'İmza Bilgileri:', 0, 1, 'L');
-            
+
             $this->SetFont('helvetica', '', 8);
             foreach ($this->signatureInfo['signatures'] as $index => $signature) {
                 $this->Cell(0, 5, ($index + 1) . '. İmza:', 0, 1, 'L');
@@ -123,7 +126,7 @@ try {
 
         // Initialize PDF
         $pdf = new SignedPDF('P', 'mm', 'A4', true, 'UTF-8', false);
-        
+
         // Set document information
         $pdf->SetCreator('TCPDF');
         $pdf->SetAuthor($signatureRecord['certificate_name']);
@@ -145,7 +148,7 @@ try {
         // Add content from original PDF
         $originalPdf = file_get_contents($tempFile);
         $pdf->AddPage();
-        $pdf->Image('@'.$originalPdf, 0, 0, 210); // A4 genişliği 210mm
+        $pdf->Image('@' . $originalPdf, 0, 0, 210); // A4 genişliği 210mm
 
         // Create signed directory if not exists
         if (!is_dir('signed')) {
@@ -174,7 +177,7 @@ try {
     } catch (Exception $e) {
         // Log PDF creation error
         Logger::getInstance()->error('PDF creation error: ' . $e->getMessage());
-        
+
         // Return error response but still indicate successful signature
         header('Content-Type: application/json');
         echo json_encode([
