@@ -25,28 +25,25 @@ $totalPages = ceil($totalSignatures / $perPage);
 ?>
 <!DOCTYPE html>
 <html lang="tr">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>İmza Kayıtları - Admin Paneli</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <!-- DataTables -->
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <style>
+        .status-badge { font-size: 0.85em; }
+        .group-status { border-left: 3px solid; padding-left: 10px; margin: 5px 0; }
+        .group-status.pending { border-color: #ffc107; }
+        .group-status.completed { border-color: #198754; }
+        .tab-content { padding: 20px 0; }
+    </style>
 </head>
-
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-lock me-2"></i>Admin Paneli
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+            <a class="navbar-brand" href="#"><i class="fas fa-lock me-2"></i>Admin Paneli</a>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
@@ -83,62 +80,103 @@ $totalPages = ceil($totalSignatures / $perPage);
                             <tr>
                                 <th>ID</th>
                                 <th>Dosya Adı</th>
-                                <th>İmzalayan</th>
+                                <th>İmza Tipi</th>
                                 <th>Format</th>
-                                <th>Durum</th>
+                                <th>İmza Durumu</th>
+                                <th>Grup Durumu</th>
                                 <th>Tarih</th>
                                 <th>İşlemler</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($signatures as $signature): ?>
-                                <tr>
-                                    <td><?= htmlspecialchars($signature['id']) ?></td>
-                                    <td>
-                                        <?= htmlspecialchars($signature['original_filename']) ?>
-                                        <?php if ($signature['status'] === 'completed'): ?>
-                                            <a href="../uploads/<?= htmlspecialchars($signature['filename']) ?>"
-                                                target="_blank" class="text-primary ms-2">
-                                                <i class="fas fa-download"></i>
-                                            </a>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?= htmlspecialchars($signature['certificate_name'] ?? '-') ?></td>
-                                    <td><?= htmlspecialchars($signature['signature_format']) ?></td>
-                                    <td>
-                                        <?php
-                                        $statusClass = [
-                                            'pending' => 'warning',
-                                            'completed' => 'success',
-                                            'failed' => 'danger'
-                                        ][$signature['status']];
-                                        $statusText = [
-                                            'pending' => 'Bekliyor',
-                                            'completed' => 'Tamamlandı',
-                                            'failed' => 'Başarısız'
-                                        ][$signature['status']];
-                                        ?>
-                                        <span class="badge bg-<?= $statusClass ?>">
-                                            <?= $statusText ?>
-                                        </span>
-                                    </td>
-                                    <td><?= date('d.m.Y H:i', strtotime($signature['created_at'])) ?></td>
-                                    <td>
-                                        <button type="button" class="btn btn-sm btn-info"
-                                            onclick="showDetails(<?= htmlspecialchars(json_encode($signature)) ?>)">
-                                            <i class="fas fa-info-circle"></i>
-                                        </button>
-                                        <?php if ($signature['status'] === 'failed'): ?>
-                                            <form method="POST" action="retry.php" class="d-inline">
-                                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
-                                                <input type="hidden" name="id" value="<?= htmlspecialchars($signature['id']) ?>">
-                                                <button type="submit" class="btn btn-sm btn-warning">
-                                                    <i class="fas fa-redo"></i>
-                                                </button>
-                                            </form>
-                                        <?php endif; ?>
-                                    </td>
-                                </tr>
+                            <tr>
+                                <td><?= htmlspecialchars($signature['id']) ?></td>
+                                <td>
+                                    <?= htmlspecialchars($signature['original_filename']) ?>
+                                    <?php if ($signature['status'] === 'completed'): ?>
+                                        <a href="../uploads/<?= htmlspecialchars($signature['filename']) ?>"
+                                            target="_blank" class="text-primary ms-2">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php
+                                    if (!empty($signature['signature_groups'])) {
+                                        $groups = json_decode($signature['signature_groups'], true);
+                                        if (count($groups) > 1) {
+                                            echo '<span class="badge bg-info">Karma İmza</span>';
+                                        } else {
+                                            echo '<span class="badge bg-primary">İmza Zinciri</span>';
+                                        }
+                                    } else {
+                                        echo '<span class="badge bg-secondary">Tekli İmza</span>';
+                                    }
+                                    ?>
+                                </td>
+                                <td><?= htmlspecialchars($signature['signature_format']) ?></td>
+                                <td>
+                                    <?php
+                                    $statusClass = [
+                                        'pending' => 'warning',
+                                        'completed' => 'success',
+                                        'failed' => 'danger'
+                                    ][$signature['status']];
+                                    $statusText = [
+                                        'pending' => 'Bekliyor',
+                                        'completed' => 'Tamamlandı',
+                                        'failed' => 'Başarısız'
+                                    ][$signature['status']];
+                                    ?>
+                                    <span class="badge bg-<?= $statusClass ?>">
+                                        <?= $statusText ?>
+                                    </span>
+                                </td>
+                                <td>
+                                    <?php
+                                    if (!empty($signature['signature_groups'])) {
+                                        $groups = json_decode($signature['signature_groups'], true);
+                                        $groupStatus = json_decode($signature['group_status'], true);
+                                        $currentGroup = $signature['current_group'];
+
+                                        foreach ($groups as $index => $group) {
+                                            $groupNum = $index + 1;
+                                            $status = $groupStatus[$groupNum] ?? 'pending';
+                                            ?>
+                                            <div class="group-status <?= $status ?>">
+                                                Grup <?= $groupNum ?>: 
+                                                <span class="badge bg-<?= $status === 'completed' ? 'success' : 'warning' ?>">
+                                                    <?= ucfirst($status) ?>
+                                                </span>
+                                                <?php if ($groupNum === $currentGroup): ?>
+                                                    <small class="text-primary">(Aktif)</small>
+                                                <?php endif; ?>
+                                            </div>
+                                            <?php
+                                        }
+                                    } else {
+                                        echo '-';
+                                    }
+                                    ?>
+                                </td>
+                                <td><?= date('d.m.Y H:i', strtotime($signature['created_at'])) ?></td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-info"
+                                        onclick="showDetails(<?= htmlspecialchars(json_encode($signature)) ?>)">
+                                        <i class="fas fa-info-circle"></i>
+                                    </button>
+                                    <?php if ($signature['status'] === 'failed'): ?>
+                                        <form method="POST" action="retry.php" class="d-inline">
+                                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
+                                            <input type="hidden" name="id" value="<?= htmlspecialchars($signature['id']) ?>">
+                                            <button type="submit" class="btn btn-sm btn-warning">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -170,41 +208,71 @@ $totalPages = ceil($totalSignatures / $perPage);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6>İmza Bilgileri</h6>
-                            <dl>
-                                <dt>Sertifika Sahibi</dt>
-                                <dd id="certName">-</dd>
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#generalInfo">
+                                Genel Bilgiler
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#groupInfo">
+                                Grup Bilgileri
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#signatureInfo">
+                                İmza Bilgileri
+                            </a>
+                        </li>
+                    </ul>
 
-                                <dt>Sertifika Sağlayıcı</dt>
-                                <dd id="certIssuer">-</dd>
-
-                                <dt>Seri No</dt>
-                                <dd id="certSerial">-</dd>
-
-                                <dt>İmza Tarihi</dt>
-                                <dd id="sigDate">-</dd>
-                            </dl>
+                    <div class="tab-content mt-3">
+                        <!-- Genel Bilgiler -->
+                        <div class="tab-pane fade show active" id="generalInfo">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Dosya Bilgileri</h6>
+                                    <dl>
+                                        <dt>Orijinal Dosya Adı</dt>
+                                        <dd id="origFilename">-</dd>
+                                        <dt>Dosya Boyutu</dt>
+                                        <dd id="fileSize">-</dd>
+                                        <dt>İmza Formatı</dt>
+                                        <dd id="sigFormat">-</dd>
+                                        <dt>IP Adresi</dt>
+                                        <dd id="ipAddress">-</dd>
+                                    </dl>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>İmza Durumu</h6>
+                                    <dl>
+                                        <dt>İmza Tipi</dt>
+                                        <dd id="signatureType">-</dd>
+                                        <dt>Genel Durum</dt>
+                                        <dd id="generalStatus">-</dd>
+                                        <dt>Son Güncelleme</dt>
+                                        <dd id="lastUpdate">-</dd>
+                                    </dl>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <h6>Dosya Bilgileri</h6>
-                            <dl>
-                                <dt>Orijinal Dosya Adı</dt>
-                                <dd id="origFilename">-</dd>
 
-                                <dt>Dosya Boyutu</dt>
-                                <dd id="fileSize">-</dd>
+                        <!-- Grup Bilgileri -->
+                        <div class="tab-pane fade" id="groupInfo">
+                            <div id="groupsContainer">
+                                <!-- Grup bilgileri dinamik olarak eklenecek -->
+                            </div>
+                        </div>
 
-                                <dt>İmza Formatı</dt>
-                                <dd id="sigFormat">-</dd>
-
-                                <dt>IP Adresi</dt>
-                                <dd id="ipAddress">-</dd>
-                            </dl>
+                        <!-- İmza Bilgileri -->
+                        <div class="tab-pane fade" id="signatureInfo">
+                            <div id="signaturesContainer">
+                                <!-- İmza bilgileri dinamik olarak eklenecek -->
+                            </div>
                         </div>
                     </div>
-                    <div id="errorMessage" class="alert alert-danger d-none"></div>
+
+                    <div id="errorMessage" class="alert alert-danger d-none mt-3"></div>
                 </div>
             </div>
         </div>
@@ -219,9 +287,7 @@ $totalPages = ceil($totalSignatures / $perPage);
     <script>
         $(document).ready(function() {
             $('#signaturesTable').DataTable({
-                order: [
-                    [0, 'desc']
-                ],
+                order: [[0, 'desc']],
                 language: {
                     url: '//cdn.datatables.net/plug-ins/1.11.5/i18n/tr.json'
                 },
@@ -232,18 +298,107 @@ $totalPages = ceil($totalSignatures / $perPage);
         });
 
         function showDetails(signature) {
-            // Update modal content
-            $('#certName').text(signature.certificate_name || '-');
-            $('#certIssuer').text(signature.certificate_issuer || '-');
-            $('#certSerial').text(signature.certificate_serial_number || '-');
-            $('#sigDate').text(signature.signature_date ?
-                new Date(signature.signature_date).toLocaleString('tr-TR') : '-');
-
+            // Genel bilgileri güncelle
             $('#origFilename').text(signature.original_filename);
             $('#fileSize').text(formatFileSize(signature.file_size));
             $('#sigFormat').text(signature.signature_format);
             $('#ipAddress').text(signature.ip_address);
 
+            // İmza tipi ve durumu
+            let signatureType = 'Tekli İmza';
+            if (signature.signature_groups) {
+                const groups = JSON.parse(signature.signature_groups);
+                signatureType = groups.length > 1 ? 'Karma İmza' : 'İmza Zinciri';
+            }
+            $('#signatureType').text(signatureType);
+
+            const statusText = {
+                'pending': 'Bekliyor',
+                'completed': 'Tamamlandı',
+                'failed': 'Başarısız'
+            }[signature.status];
+            $('#generalStatus').text(statusText);
+            $('#lastUpdate').text(new Date(signature.created_at).toLocaleString('tr-TR'));
+
+            // Grup bilgilerini güncelle
+            if (signature.signature_groups) {
+                const groups = JSON.parse(signature.signature_groups);
+                const groupStatus = JSON.parse(signature.group_status);
+                const groupSignatures = JSON.parse(signature.group_signatures);
+                let groupsHtml = '';
+
+                groups.forEach((group, index) => {
+                    const groupNum = index + 1;
+                    const status = groupStatus[groupNum];
+                    const signatures = groupSignatures[groupNum] || [];
+                    
+                    groupsHtml += `
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">Grup ${groupNum}</h6>
+                                <span class="badge bg-${status === 'completed' ? 'success' : 'warning'}">
+                                    ${status === 'completed' ? 'Tamamlandı' : 'Bekliyor'}
+                                </span>
+                            </div>
+                            <div class="card-body">
+                                <h6>İmzacılar:</h6>
+                                <ul class="list-unstyled">
+                                    ${group.signers.map(signer => {
+                                        const signed = signatures.find(s => s.certificateSerialNumber === signer);
+                                        return `
+                                            <li class="mb-2">
+                                                <i class="fas ${signed ? 'fa-check-circle text-success' : 'fa-circle text-warning'}"></i>
+                                                TC: ${signer}
+                                                ${signed ? `
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        İmzalayan: ${signed.certificateName}<br>
+                                                        Tarih: ${new Date(signed.signatureDate).toLocaleString('tr-TR')}
+                                                    </small>
+                                                ` : ''}
+                                            </li>
+                                        `;
+                                    }).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                $('#groupsContainer').html(groupsHtml);
+            } else {
+                $('#groupsContainer').html('<p class="text-muted">Bu dosya için grup bilgisi bulunmuyor.</p>');
+            }
+
+            // İmza geçmişini güncelle
+            if (signature.signature_groups) {
+                const groupSignatures = JSON.parse(signature.group_signatures);
+                let signaturesHtml = '';
+
+                Object.values(groupSignatures).flat().forEach((sig, index) => {
+                    signaturesHtml += `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6>${index + 1}. İmza</h6>
+                                <dl class="mb-0">
+                                    <dt>İmzalayan</dt>
+                                    <dd>${sig.certificateName}</dd>
+                                    <dt>Sertifika No</dt>
+                                    <dd>${sig.certificateSerialNumber}</dd>
+                                    <dt>Tarih</dt>
+                                    <dd>${new Date(sig.signatureDate).toLocaleString('tr-TR')}</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                $('#signaturesContainer').html(signaturesHtml || '<p class="text-muted">Henüz imza bilgisi bulunmuyor.</p>');
+            } else {
+                $('#signaturesContainer').html('<p class="text-muted">Bu dosya için imza bilgisi bulunmuyor.</p>');
+            }
+
+            // Hata mesajı
             if (signature.status === 'failed') {
                 $('#errorMessage')
                     .text(signature.error_message)
@@ -252,7 +407,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                 $('#errorMessage').addClass('d-none');
             }
 
-            // Show modal
+            // Modal'ı göster
             new bootstrap.Modal(document.getElementById('detailsModal')).show();
         }
 
@@ -264,5 +419,4 @@ $totalPages = ceil($totalSignatures / $perPage);
         }
     </script>
 </body>
-
 </html>
