@@ -44,15 +44,6 @@ foreach ($directories as $dir => $required_perms) {
     ];
 }
 
-// Kolay Imza Installation
-$kolayImzaExists = file_exists(KOLAY_IMZA_PATH);
-$checks['Kolay Imza Installation'] = [
-    'required' => 'Installed',
-    'current' => $kolayImzaExists ? 'Installed' : 'Not Found',
-    'status' => $kolayImzaExists,
-    'critical' => true
-];
-
 // PHP Settings
 $settings = [
     'upload_max_filesize' => '10M',
