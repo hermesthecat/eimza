@@ -40,10 +40,10 @@ try {
     // Get server protocol and host
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
     $host = $_SERVER['HTTP_HOST'];
-    
+
     // Create file URL
     $fileUrl = $protocol . $host . '/uploads/' . $signature['filename'];
-    
+
     // Prepare sign protocol URL
     $request = [
         'resources' => [
@@ -79,10 +79,9 @@ try {
     $_SESSION['success'] = 'İmzalama işlemi yeniden başlatıldı';
     header('Location: signatures.php');
     exit;
-
 } catch (Exception $e) {
     Logger::getInstance()->error('Signature retry error: ' . $e->getMessage());
-    
+
     $_SESSION['error'] = $e->getMessage();
     header('Location: signatures.php');
     exit;

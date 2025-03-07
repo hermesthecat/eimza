@@ -55,6 +55,7 @@ $totalPages = ceil($totalSignatures / $perPage);
         .tab-content {
             padding: 20px 0;
         }
+
         .bg-indigo {
             background-color: #6610f2;
         }
@@ -172,7 +173,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                                                     // Grup durumuna göre badge rengini belirle
                                                     $badgeClass = 'danger'; // Varsayılan: Kırmızı (bekleyen gruplar için)
                                                     $statusText = 'Bekliyor';
-                                                    
+
                                                     if ($status === 'completed') {
                                                         $badgeClass = 'success'; // Yeşil (tamamlanan gruplar)
                                                         $statusText = 'Tamamlandı';
