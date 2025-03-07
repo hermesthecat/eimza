@@ -6,3 +6,4 @@ temp/*.pdf
 .clinerules-debug
 .clinerules-test
 .roomodes
+logs/*.log
