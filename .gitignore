@@ -1,0 +1,8 @@
+uploads/*.pdf
+temp/*.pdf
+.clinerules-arc
+.clinerules-ask
+.clinerules-code
+.clinerules-debug
+.clinerules-test
+.roomodes
