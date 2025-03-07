@@ -2,6 +2,7 @@
 require_once 'config.php';
 require_once 'includes/logger.php';
 require_once 'includes/SignatureManager.php';
+require_once('tcpdf/tcpdf.php');
 
 try {
     // Initialize signature manager
@@ -63,17 +64,84 @@ try {
         'signature_location' => $signatureRecord['signature_location'],
         'signature_reason' => $signatureRecord['signature_reason']
     ];
+// Create signed PDF
+try {
+    // Download original PDF
+    $pdfContent = file_get_contents($sourceUrl);
+    if ($pdfContent === false) {
+        throw new Exception('Orijinal PDF indirilemedi');
+    }
 
-    // Return success response
+    // Create temporary file
+    $tempFile = tempnam(sys_get_temp_dir(), 'pdf_');
+    file_put_contents($tempFile, $pdfContent);
+
+    // Initialize TCPDF
+    $pdf = new TCPDF('P', 'mm', 'A4', true, 'UTF-8', false);
+    
+    // Set document information
+    $pdf->SetCreator('TCPDF');
+    $pdf->SetAuthor($signatureRecord['certificate_name']);
+    $pdf->SetTitle('İmzalı Belge');
+
+    // Import pages from original PDF
+    $pageCount = $pdf->setSourceFile($tempFile);
+    
+    // Add signature information to each page
+    for ($i = 1; $i <= $pageCount; $i++) {
+        $tplIdx = $pdf->importPage($i);
+        $pdf->AddPage();
+        $pdf->useTemplate($tplIdx);
+
+        // Add signature information at the bottom of the page
+        $pdf->SetY(-30);
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell(0, 10, 'İmzalayan: ' . $signatureRecord['certificate_name'], 0, 1, 'L');
+        $pdf->Cell(0, 10, 'İmza Tarihi: ' . $signatureRecord['signature_date'], 0, 1, 'L');
+        $pdf->Cell(0, 10, 'Sertifika No: ' . $signatureRecord['certificate_serial_number'], 0, 1, 'L');
+    }
+
+    // Create signed directory if not exists
+    if (!is_dir('signed')) {
+        mkdir('signed', 0777, true);
+    }
+
+    // Save signed PDF
+    $signedPdfPath = 'signed/' . pathinfo($filename, PATHINFO_FILENAME) . '_signed.pdf';
+    $pdf->Output($signedPdfPath, 'F');
+
+    // Clean up temporary file
+    unlink($tempFile);
+
+    // Return success response with signed PDF path
     header('Content-Type: application/json');
     echo json_encode([
         'success' => true,
-        'message' => 'İmza başarıyla alındı',
+        'message' => 'İmza başarıyla alındı ve PDF oluşturuldu',
+        'info' => [
+            'name' => $signatureRecord['certificate_name'],
+            'issuer' => $signatureRecord['certificate_issuer'],
+            'date' => $signatureRecord['signature_date'],
+            'signed_pdf' => $signedPdfPath
+        ]
+    ]);
+} catch (Exception $e) {
+    // Log PDF creation error
+    Logger::getInstance()->error('PDF creation error: ' . $e->getMessage());
+    
+    // Return error response but still indicate successful signature
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => true,
+        'message' => 'İmza başarıyla alındı fakat PDF oluşturulamadı',
+        'error' => $e->getMessage(),
         'info' => [
             'name' => $signatureRecord['certificate_name'],
             'issuer' => $signatureRecord['certificate_issuer'],
             'date' => $signatureRecord['signature_date']
         ]
+    ]);
+}
     ]);
 } catch (Exception $e) {
     // Log error
