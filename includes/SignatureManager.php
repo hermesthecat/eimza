@@ -57,13 +57,14 @@ class SignatureManager
     public function updateSignatureResult($filename, $signatureData)
     {
         try {
-            $sql = "UPDATE signatures SET 
+            $sql = "UPDATE signatures SET
                 status = 'completed',
                 certificate_name = :cert_name,
                 certificate_issuer = :cert_issuer,
                 certificate_serial_number = :cert_serial,
                 signature_date = :sig_date,
-                signature_data = :sig_data
+                signature_data = :sig_data,
+                signed_pdf_path = :signed_pdf_path
                 WHERE filename = :filename";
 
             $stmt = $this->db->prepare($sql);
@@ -73,6 +74,7 @@ class SignatureManager
                 'cert_serial' => $signatureData['certificateSerialNumber'],
                 'sig_date' => date('Y-m-d H:i:s', strtotime($signatureData['createdAt'])),
                 'sig_data' => $signatureData['signature'],
+                'signed_pdf_path' => $signatureData['signed_pdf_path'] ?? null,
                 'filename' => $filename
             ]);
 

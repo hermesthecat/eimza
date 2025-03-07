@@ -20,6 +20,7 @@ CREATE TABLE signatures (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     status ENUM('pending', 'completed', 'failed') DEFAULT 'pending',
     error_message TEXT,
+    signed_pdf_path VARCHAR(255),
     INDEX idx_filename (filename),
     INDEX idx_certificate_serial (certificate_serial_number),
     INDEX idx_status (status),

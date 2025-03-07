@@ -59,7 +59,8 @@ try {
         'certificateIssuer' => $response['certificateIssuer'] ?? null,
         'certificateSerialNumber' => $response['certificateSerialNumber'] ?? null,
         'createdAt' => $response['createdAt'] ?? date('Y-m-d H:i:s'),
-        'signature' => $resource['signature']
+        'signature' => $resource['signature'],
+        'signed_pdf_path' => $signedPdfPath ?? null
     ]);
 
     // Get updated signature record
