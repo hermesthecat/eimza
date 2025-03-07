@@ -195,14 +195,33 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <?php if ($signature['status'] === 'pending'): ?>
-                                            <span class="badge bg-info">
-                                                Grup <?= $currentGroup ?>
-                                            </span>
+                                        <?php if (!empty($groups)): ?>
+                                            <div class="d-flex gap-1 flex-wrap">
+                                                <?php foreach ($groups as $index => $group): ?>
+                                                    <?php
+                                                    $groupNum = $index + 1;
+                                                    $badgeClass = 'bg-danger'; // Varsayılan: Bekleyen (kırmızı)
+                                                    
+                                                    if ($groupStatus[$groupNum] === 'completed') {
+                                                        $badgeClass = 'bg-success'; // Tamamlandı (yeşil)
+                                                    } elseif ($groupNum === $currentGroup) {
+                                                        $badgeClass = 'bg-warning'; // Aktif (sarı)
+                                                    }
+                                                    ?>
+                                                    <span class="badge <?= $badgeClass ?>">
+                                                        <?php
+                                                        echo "Grup " . $groupNum;
+                                                        if ($groupStatus[$groupNum] === 'completed') {
+                                                            echo ' <i class="fas fa-check"></i>';
+                                                        } elseif ($groupNum === $currentGroup) {
+                                                            echo ' <i class="fas fa-clock"></i>';
+                                                        }
+                                                        ?>
+                                                    </span>
+                                                <?php endforeach; ?>
+                                            </div>
                                         <?php else: ?>
-                                            <span class="badge bg-secondary">
-                                                -
-                                            </span>
+                                            <span class="badge bg-secondary">-</span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
