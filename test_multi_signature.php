@@ -319,6 +319,12 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
             margin-top: 20px;
             gap: 20px;
         }
+
+        .card-header {
+            background: #f9fafb;
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
     </style>
 </head>
 
@@ -602,11 +608,36 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
         ?>
 
         <div class="step">
-            <h2>İmza Durumu Kontrol Et</h2>
-            <form method="get">
-                <input type="text" name="check_status" placeholder="Dosya adı" required>
-                <input type="submit" value="Durumu Kontrol Et" class="button">
-            </form>
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="h5 mb-0">
+                        <i class="fas fa-search me-2"></i>
+                        İmza Durumu Kontrol Et
+                    </h2>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-8">
+                            <label for="check_status" class="form-label">
+                                <i class="fas fa-file-signature me-1"></i>
+                                Dosya Adı
+                            </label>
+                            <input type="text"
+                                class="form-control"
+                                id="check_status"
+                                name="check_status"
+                                placeholder="İmza durumunu kontrol etmek istediğiniz dosyanın adını girin"
+                                required>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-search me-2"></i>
+                                Durumu Kontrol Et
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
 
         <!-- Bootstrap Bundle with Popper -->
