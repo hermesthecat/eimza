@@ -1,6 +1,6 @@
 # To-Do List
 
-This file combines the development plan from `trea.md` and the UI implementation plan from `plan.md` into a comprehensive to-do list.
+This file combines the development plan from `trea.md` and `copilot.md` and the UI implementation plan from `plan.md` into a comprehensive to-do list.
 
 ## I. UI Implementation for Signature Type Selection (from plan.md)
 
@@ -12,42 +12,103 @@ This file combines the development plan from `trea.md` and the UI implementation
 6.  **Implement JavaScript Code for UI Interaction:** Write JavaScript code to handle user interactions with the UI elements. This may include form validation, dynamic UI updates, and AJAX requests.
 7.  **Update Database and Signature Processes:** Modify the database schema and signature processes as needed to accommodate the new signature type selection functionality.
 
-## II. Development Plan (from trea.md)
+## II. Development Plan (from trea.md and copilot.md)
 
-### A. Security Improvements (Immediate - 1-3 months)
+### A. Security Improvements (Immediate - 2-3 weeks)
 
 1.  **Admin Panel Security Update:**
     *   [ ] Remove hardcoded admin password in `admin/auth.php` and `admin/login.php`.
     *   [ ] Implement secure password hashing algorithm (bcrypt) for admin passwords.
     *   [ ] Create a database table for admin users to store usernames and hashed passwords.
+        *   **Step 1.1.1**: Create users table
+            ```sql
+            CREATE TABLE users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(255) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                full_name VARCHAR(255),
+                email VARCHAR(255),
+                role ENUM('admin', 'user') DEFAULT 'user',
+                last_login DATETIME,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            );
+            ```
     *   [ ] Implement two-factor authentication (2FA) for admin login.
     *   [ ] Strengthen session management and security controls in the admin panel.
+        *   **Step 1.1.2**: Create secure password hash functions (`includes/UserManager.php`)
+            ```php
+            function hashPassword($password) {
+                return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+            }
+
+            function verifyPassword($password, $hash) {
+                return password_verify($password, $hash);
+            }
+            ```
+        *   **Step 1.1.3**: Update admin authentication system (`admin/auth.php`)
+        *   **Step 1.1.4**: Update admin panel login page (`admin/login.php`)
+        *   **Step 1.1.5**: Create user management page (`admin/users.php`)
 2.  **General Security Improvements:**
     *   [ ] Implement XSS (Cross-Site Scripting) protection.
+        *   **Step 1.2.1**: Improve HTML output encoding function (`SecurityHelper` class).
+        *   **Step 1.2.2**: Ensure complete sanitization of form input data.
+        *   **Step 1.2.3**: Add CSP (Content Security Policy) header.
     *   [ ] Implement CSRF (Cross-Site Request Forgery) protection.
+        *   **Step 1.3.1**: Develop CSRF token generation and validation mechanism
+            ```php
+            function generateCsrfToken() {
+                if (empty($_SESSION['csrf_token'])) {
+                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+                }
+                return $_SESSION['csrf_token'];
+            }
+
+            function validateCsrfToken($token) {
+                return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
+            }
+            ```
+        *   **Step 1.3.2**: Add CSRF token to all forms.
+        *   **Step 1.3.3**: Implement CSRF token validation in AJAX requests.
+    *   [ ] File Security
+        *   **Step 1.4.1**: Add encryption system for secure storage of signed PDFs.
+        *   **Step 1.4.2**: Create token-based system for file access.
+        *   **Step 1.4.3**: Apply additional security controls during file upload and download operations.
     *   [ ] Strengthen input validations to prevent injection attacks.
     *   [ ] Implement rate limiting to prevent brute-force attacks.
     *   [ ] Enforce SSL/TLS to encrypt data in transit.
     *   [ ] Optimize security headers to prevent common web attacks.
 
-### B. Performance Optimizations (Immediate - 1-3 months)
-
-1.  **PDF Processing Optimization:**
-    *   [ ] Implement chunk-based upload system for large PDF files to reduce memory usage.
-    *   [ ] Implement a queue system for PDF processing to handle large volumes of signing requests.
-    *   [ ] Implement caching mechanism to store processed PDFs and reduce processing time.
-    *   [ ] Optimize PDF compression to reduce file size and improve download speed.
-2.  **Database Optimization:**
-    *   [ ] Review indexing strategy to improve query performance.
-    *   [ ] Optimize queries to reduce database load.
-    *   [ ] Implement connection pooling to reduce database connection overhead.
-    *   [ ] Database partitioning strategy (consider for very large datasets).
-
-### C. User Experience Improvements (Immediate - 1-3 months)
+### B. User Experience Improvements (Immediate - 4-6 weeks)
 
 1.  **Interface Improvements:**
     *   [ ] Implement modern and responsive design for a better user experience on all devices.
+    *   [ ] Add PDF preview and visual selector for signature positioning.
+        ```javascript
+        function addPdfPreview() {
+            const fileInput = document.getElementById('pdfFile');
+            fileInput.addEventListener('change', function() {
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        // PDF.js kullanarak PDF'i önizle ve imza konumu seçiciyi başlat
+                        initPdfPreview(e.target.result);
+                    }
+                    reader.readAsArrayBuffer(this.files[0]);
+                }
+            });
+        }
+        ```
     *   [ ] Dark mode support for improved accessibility and user preference.
+    *   [ ] Make accessibility improvements (WCAG compliance).
+    *   [ ] Progress Tracking and Notifications
+        *   [ ] Add real-time progress bar.
+        *   [ ] Add signature process notifications using WebSocket or Server-sent Events.
+        *   [ ] Add email notification system.
+    *   [ ] Multi-Language Support
+        *   [ ] Create structure for language files (`lang/` directory).
+        *   [ ] Add English and Turkish language files.
+        *   [ ] Add language selection and switching interface.
     *   [ ] Progress indicators and loading animations to provide feedback during long operations.
     *   [ ] Drag & drop file upload support for a more intuitive user experience.
     *   [ ] AJAX-based form submissions for a smoother and faster user experience.
@@ -57,30 +118,63 @@ This file combines the development plan from `trea.md` and the UI implementation
     *   [ ] Signature templates system to allow users to save and reuse signature settings.
     *   [ ] Automatic signature placement suggestions to help users quickly place their signature.
 
-### D. New Features (Mid-Term - 3-6 months)
+### C. Technical Improvements (Mid-Term - 6-8 weeks)
 
-1.  **Document Management:**
-    *   [ ] Folder structure and document organization to allow users to easily manage their documents.
-    *   [ ] Document versioning system to track changes to documents over time.
-    *   [ ] Document metadata management to allow users to add and edit metadata for their documents.
-    *   [ ] Document search and filtering to allow users to quickly find the documents they need.
-2.  **Workflow Management:**
-    *   [ ] Customizable signature workflows to allow users to define their own signature processes.
-    *   [ ] Email notifications to keep users informed about the status of their signature requests.
-    *   [ ] Reminders and deadline tracking to help users stay on top of their signature tasks.
-    *   [ ] Workflow templates to allow users to quickly create common signature workflows.
-3.  **API and Integration:**
-        *   REST API Development:
-            *   [ ] Comprehensive API documentation.
-            *   [ ] API versioning.
-            *   [ ] API rate limiting.
-            *   [ ] OAuth2 implementation.
-4.  **Test and Quality:**
-        *   [ ] Test Automation:
-            *   [ ] Increase unit test coverage.
-            *   [ ] Integration tests.
+1.  **Modernize Code Structure:**
+    *   [ ] Apply namespace structure and PSR-4 autoloading.
+    *   [ ] Add dependency injection container.
+    *   [ ] Improve library management with Composer.
+        ```json
+        {
+          "name": "eimza/pdf-signing",
+          "description": "PDF İmzalama Uygulaması",
+          "type": "project",
+          "require": {
+            "php": ">=7.4",
+            "tecnickcom/tcpdf": "^6.4",
+            "monolog/monolog": "^2.3",
+            "vlucas/phpdotenv": "^5.4"
+          },
+          "autoload": {
+            "psr-4": {
+              "App\\": "src/"
+            }
+          }
+        }
+        ```
+2.  **Database Improvements:**
+    *   [ ] Create PDO Wrapper class for database connection.
+    *   [ ] Add migration system.
+    *   [ ] Optimize database indexes.
+3.  **Add Unit Tests:**
+    *   [ ] Set up PHPUnit.
+    *   [ ] Write unit tests for `SecurityHelper`.
+    *   [ ] Write unit tests for `SignatureManager`.
+4.  **Environment Configuration:**
+    *   [ ] Add `.env` file support.
+    *   [ ] Move configuration parameters from `config.php` to `.env` file.
+    *   [ ] Create example `.env.example` file.
 
-### E. Infrastructure Improvements (Long-Term - 6-12 months)
+### D. New Features (Mid-Term - 12-16 weeks)
+
+1.  **Multi-Signature Improvements:**
+    *   [ ] Create signature workflow manager.
+    *   [ ] Add feature to create and manage signature templates.
+    *   [ ] Add interface to visually display and manage signature order.
+2.  **Document Management:**
+    *   [ ] Add system to categorize and organize documents into folders.
+    *   [ ] Develop advanced search and filtering features.
+    *   [ ] Add document history and versioning system.
+3.  **API Improvements:**
+    *   [ ] Develop RESTful API.
+    *   [ ] Create API documentation (Swagger).
+    *   [ ] Add API authentication and authorization system (JWT).
+4.  **Reporting System:**
+    *   [ ] Add signature statistics panel.
+    *   [ ] Add feature to export reports in PDF and CSV formats.
+    *   [ ] Add feature to schedule reports and send them via email.
+
+### E. Infrastructure Improvements (Long-Term)
 
 1.  **Scaling:**
     *   [ ] Horizontal scaling infrastructure.
@@ -88,7 +182,7 @@ This file combines the development plan from `trea.md` and the UI implementation
     *   [ ] Distributed caching system.
     *   [ ] Plan for migrating to microservices architecture.
 
-### F. Advanced Features (Long-Term - 6-12 months)
+### F. Advanced Features (Long-Term)
 
 1.  **Advanced analytics**
 2.  **AI/ML features**
@@ -102,17 +196,65 @@ This file combines the development plan from `trea.md` and the UI implementation
     3.  Critical performance optimizations
     4.  Basic UI/UX improvements
 *   **Mid-Term (3-6 months):**
-    1.  Document management system
-    2.  Workflow management
-    3.  API development
-    4.  Test automation
+    1.  Multi-Signature Improvements
+    2.  Code structure modernization
+    3.  Database improvements
+    4.  File Security Improvements
+    5.  Document management system
+    6.  Workflow management
+    7.  API development
+    8.  Test automation
 *   **Long-Term (6-12 months):**
     1.  Microservices architecture migration
     2.  Advanced analytics
     3.  AI/ML features
     4.  Full integration suite
 
-## IV. Success Criteria
+## IV. Technical Debt
+
+### A. Critical Technical Debt
+
+*   [ ] Admin panel has hardcoded credentials (must be resolved urgently)
+*   [ ] Missing XSS protection mechanisms
+*   [ ] Inadequate CSRF protection
+
+### B. Medium Technical Debt
+
+*   [ ] Non-standardized code structure
+*   [ ] Inadequate error handling
+*   [ ] Manual dependency management
+
+### C. Low Priority Technical Debt
+
+*   [ ] Lack of test coverage
+*   [ ] Documentation deficiencies
+*   [ ] Repeated code blocks
+
+## V. Resources and Estimated Durations
+
+### A. Human Resources
+
+*   1 Senior PHP Developer (for security and infrastructure)
+*   1 Frontend Developer (for user interface improvements)
+*   1 Database Specialist (for database optimization - part-time)
+*   1 QA Specialist (for testing and quality assurance - part-time)
+
+### B. Estimated Durations
+
+*   Security Improvements: 2-3 weeks
+*   User Experience Improvements: 4-6 weeks
+*   Technical Improvements: 6-8 weeks
+*   New Features: 12-16 weeks
+
+## VI. Next Steps
+
+1.  Assess current security status by performing an up-to-date security scan
+2.  Create a detailed development calendar
+3.  Prepare an emergency action plan to address critical security vulnerabilities
+4.  Prepare a development environment for modernization efforts
+5.  Prepare a survey to collect user feedback and determine user expectations
+
+## VII. Success Criteria
 
 *   Security vulnerabilities closed
 *   50% improvement in system performance
