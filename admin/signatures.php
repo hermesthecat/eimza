@@ -66,8 +66,21 @@ $totalPages = ceil($totalSignatures / $perPage);
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="#"><i class="fas fa-lock me-2"></i>Admin Paneli</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="signatures.php">
+                            <i class="fas fa-file-signature me-2"></i>İmzalar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="users.php">
+                            <i class="fas fa-users me-2"></i>Kullanıcılar
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <span class="nav-link">
                             <i class="fas fa-user me-2"></i><?= htmlspecialchars(getAdminUsername()) ?>

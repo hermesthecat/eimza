@@ -1,7 +1,14 @@
 <?php
 require_once '../config.php';
 require_once '../includes/logger.php';
+require_once '../includes/UserManager.php';
 require_once 'auth.php';
+
+// Initialize UserManager
+$userManager = new UserManager($db, Logger::getInstance());
+
+// Create initial admin user if needed
+createInitialAdminIfNeeded();
 
 // Zaten giriş yapmışsa signatures.php'ye yönlendir
 if (isAdminLoggedIn()) {
@@ -10,6 +17,7 @@ if (isAdminLoggedIn()) {
 }
 
 $error = '';
+$successMessage = '';
 
 // Form gönderilmişse
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -20,30 +28,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // CSRF kontrolü
     if (!validateCsrfToken($csrf_token)) {
         $error = 'Geçersiz form gönderimi';
-        Logger::getInstance()->warning("CSRF token validation failed for login attempt");
+        Logger::getInstance()->warning("CSRF token validation failed for login attempt", [
+            'ip' => getClientIP(),
+            'username' => $username
+        ]);
     }
     // Login attempt kontrolü
     elseif (!checkLoginAttempts($username)) {
         $error = 'Çok fazla başarısız deneme. Lütfen 15 dakika bekleyin.';
-        Logger::getInstance()->warning("Too many login attempts for: $username");
+        Logger::getInstance()->warning("Too many login attempts", [
+            'username' => $username,
+            'ip' => getClientIP()
+        ]);
     }
     // Kullanıcı adı ve şifre kontrolü
-    elseif ($username === 'admin' && $password === 'admin123') {
-        $_SESSION['admin'] = true;
-        $_SESSION['admin_username'] = $username;
+    else {
+        $user = validateAdminCredentials($username, $password);
+        
+        if ($user) {
+            // Set session variables
+            $_SESSION['admin'] = true;
+            $_SESSION['admin_id'] = $user['id'];
+            $_SESSION['admin_username'] = $user['username'];
 
-        // Reset login attempts
-        resetLoginAttempts($username);
+            // Reset login attempts
+            resetLoginAttempts($username);
 
-        // Log successful login
-        Logger::getInstance()->info("Admin login successful: $username from IP: " . getClientIP());
+            // Log successful login
+            Logger::getInstance()->info("Admin login successful", [
+                'username' => $username,
+                'ip' => getClientIP(),
+                'userId' => $user['id']
+            ]);
 
-        header('Location: signatures.php');
-        exit;
-    } else {
-        $error = 'Geçersiz kullanıcı adı veya şifre';
-        recordFailedLogin($username);
-        Logger::getInstance()->warning("Failed admin login attempt: $username from IP: " . getClientIP());
+            header('Location: signatures.php');
+            exit;
+        } else {
+            $error = 'Geçersiz kullanıcı adı veya şifre';
+            recordFailedLogin($username);
+            Logger::getInstance()->warning("Failed admin login attempt", [
+                'username' => $username,
+                'ip' => getClientIP()
+            ]);
+        }
     }
 }
 
@@ -108,6 +135,12 @@ $csrf_token = generateCsrfToken();
                         <?php if ($error): ?>
                             <div class="alert alert-danger">
                                 <i class="fas fa-exclamation-circle me-2"></i><?= htmlspecialchars($error) ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if ($successMessage): ?>
+                            <div class="alert alert-success">
+                                <i class="fas fa-check-circle me-2"></i><?= htmlspecialchars($successMessage) ?>
                             </div>
                         <?php endif; ?>
 

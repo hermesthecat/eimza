@@ -1,10 +1,15 @@
 <?php
 require_once __DIR__ . '/../includes/SecurityHelper.php';
+require_once __DIR__ . '/../includes/UserManager.php';
+require_once __DIR__ . '/../config.php';
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Initialize UserManager
+$userManager = new UserManager($db, Logger::getInstance());
 
 /**
  * Admin girişini kontrol eder
@@ -12,7 +17,7 @@ if (session_status() === PHP_SESSION_NONE) {
  */
 function isAdminLoggedIn()
 {
-    return isset($_SESSION['admin']) && $_SESSION['admin'] === true;
+    return isset($_SESSION['admin']) && $_SESSION['admin'] === true && isset($_SESSION['admin_id']);
 }
 
 /**
@@ -20,9 +25,26 @@ function isAdminLoggedIn()
  */
 function requireAdmin()
 {
+    global $userManager;
+    
     if (!isAdminLoggedIn()) {
         // Log unauthorized access attempt
         Logger::getInstance()->warning('Unauthorized access attempt from IP: ' . SecurityHelper::getClientIP());
+        header('Location: login.php');
+        exit;
+    }
+
+    // Verify admin still exists and has admin role
+    $adminUser = $userManager->getUserById($_SESSION['admin_id']);
+    if (!$adminUser || $adminUser['role'] !== 'admin') {
+        // Log potential security issue
+        Logger::getInstance()->warning('Invalid admin session detected', [
+            'userId' => $_SESSION['admin_id'],
+            'ip' => SecurityHelper::getClientIP()
+        ]);
+        
+        // Force logout
+        session_destroy();
         header('Location: login.php');
         exit;
     }
@@ -108,14 +130,28 @@ function resetLoginAttempts($username)
 
 /**
  * Admin şifresini doğrular
+ * @param string $username
  * @param string $password
- * @return bool
+ * @return bool|array False on failure, user data on success
  */
-function validateAdminPassword($password)
+function validateAdminCredentials($username, $password)
 {
-    // TODO: Veritabanından şifre kontrolü yapılacak
-    // Şimdilik sabit şifre kontrolü
-    return $password === 'admin123' && SecurityHelper::isStrongPassword($password);
+    global $userManager;
+    
+    $user = $userManager->getUserByUsername($username);
+    
+    if (!$user || $user['role'] !== 'admin') {
+        return false;
+    }
+
+    if (!$userManager->verifyPassword($password, $user['password_hash'])) {
+        return false;
+    }
+
+    // Update last login time
+    $userManager->updateLastLogin($user['id']);
+    
+    return $user;
 }
 
 /**
@@ -132,4 +168,43 @@ function logSecurityEvent($action, $details = '')
         SecurityHelper::getClientIP(),
         $details
     ));
+}
+
+/**
+ * Creates initial admin user if no admin exists
+ * @return bool
+ */
+function createInitialAdminIfNeeded()
+{
+    global $userManager;
+    
+    // Check if any admin user exists
+    $stmt = $GLOBALS['db']->prepare("SELECT COUNT(*) FROM users WHERE role = 'admin'");
+    $stmt->execute();
+    $adminCount = $stmt->fetchColumn();
+
+    if ($adminCount === 0) {
+        // Create initial admin user
+        $initialAdminPassword = bin2hex(random_bytes(8)); // Generate a random 16-character password
+        $admin = $userManager->createUser(
+            'admin',
+            $initialAdminPassword,
+            'System Administrator',
+            'admin@example.com',
+            'admin'
+        );
+
+        if ($admin) {
+            Logger::getInstance()->info(
+                'Initial admin user created. Please change password immediately.',
+                ['username' => 'admin', 'password' => $initialAdminPassword]
+            );
+            return true;
+        }
+        
+        Logger::getInstance()->error('Failed to create initial admin user');
+        return false;
+    }
+
+    return true;
 }
