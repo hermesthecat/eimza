@@ -16,40 +16,7 @@ This file combines the development plan from `trea.md` and `copilot.md` and the 
 
 ### A. Security Improvements (Immediate - 2-3 weeks)
 
-1.  **Admin Panel Security Update:**
-    *   [ ] Remove hardcoded admin password in `admin/auth.php` and `admin/login.php`.
-    *   [ ] Implement secure password hashing algorithm (bcrypt) for admin passwords.
-    *   [ ] Create a database table for admin users to store usernames and hashed passwords.
-        *   **Step 1.1.1**: Create users table
-            ```sql
-            CREATE TABLE users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(255) NOT NULL UNIQUE,
-                password_hash VARCHAR(255) NOT NULL,
-                full_name VARCHAR(255),
-                email VARCHAR(255),
-                role ENUM('admin', 'user') DEFAULT 'user',
-                last_login DATETIME,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            );
-            ```
-    *   [ ] Implement two-factor authentication (2FA) for admin login.
-    *   [ ] Strengthen session management and security controls in the admin panel.
-        *   **Step 1.1.2**: Create secure password hash functions (`includes/UserManager.php`)
-            ```php
-            function hashPassword($password) {
-                return password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
-            }
-
-            function verifyPassword($password, $hash) {
-                return password_verify($password, $hash);
-            }
-            ```
-        *   **Step 1.1.3**: Update admin authentication system (`admin/auth.php`)
-        *   **Step 1.1.4**: Update admin panel login page (`admin/login.php`)
-        *   **Step 1.1.5**: Create user management page (`admin/users.php`)
-2.  **General Security Improvements:**
+1.  **General Security Improvements:**
     *   [ ] Implement XSS (Cross-Site Scripting) protection.
         *   **Step 1.2.1**: Improve HTML output encoding function (`SecurityHelper` class).
         *   **Step 1.2.2**: Ensure complete sanitization of form input data.
@@ -78,6 +45,11 @@ This file combines the development plan from `trea.md` and `copilot.md` and the 
     *   [ ] Implement rate limiting to prevent brute-force attacks.
     *   [ ] Enforce SSL/TLS to encrypt data in transit.
     *   [ ] Optimize security headers to prevent common web attacks.
+2.  **Implement User Authentication System Throughout the Application:**
+    *   [ ] Integrate the new user authentication system into the main application (index.php, sign.php, verify.php, etc.).
+    *   [ ] Add login.php and logout.php to the main system.
+3.  **Update Users Table:**
+    *   [ ] Add "full_name" and "tckn" fields to the users table in database.sql.
 
 ### B. User Experience Improvements (Immediate - 4-6 weeks)
 
@@ -191,10 +163,11 @@ This file combines the development plan from `trea.md` and `copilot.md` and the 
 ## III. Prioritization
 
 *   **Immediate (1-3 months):**
-    1.  Admin panel security update
-    2.  General security improvements
-    3.  Critical performance optimizations
-    4.  Basic UI/UX improvements
+    1.  General security improvements
+    2.  Implement User Authentication System Throughout the Application
+    3.  Update Users Table
+    4.  Critical performance optimizations
+    5.  Basic UI/UX improvements
 *   **Mid-Term (3-6 months):**
     1.  Multi-Signature Improvements
     2.  Code structure modernization
@@ -214,7 +187,6 @@ This file combines the development plan from `trea.md` and `copilot.md` and the 
 
 ### A. Critical Technical Debt
 
-*   [ ] Admin panel has hardcoded credentials (must be resolved urgently)
 *   [ ] Missing XSS protection mechanisms
 *   [ ] Inadequate CSRF protection
 
