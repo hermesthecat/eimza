@@ -583,4 +583,56 @@ class SignatureManager
             return [];
         }
     }
+
+    /**
+     * Get completed signatures for a user
+     * @param string $tckn The user's TCKN
+     * @return array Array of completed signatures
+     */
+    public function getCompletedSignatures($tckn)
+    {
+        try {
+            $this->logger->info('Fetching completed signatures for TCKN: ' . $tckn);
+            
+            $sql = "SELECT s.*,
+                   CASE WHEN JSON_CONTAINS(
+                       JSON_EXTRACT(s.signature_groups, CONCAT('$[', s.current_group - 1, '].signers')),
+                       CONCAT('\"', :tckn, '\"')
+                   ) THEN 1 ELSE 0 END as current_group_signer,
+                   s.current_group as group_num
+                   FROM signatures s
+                   WHERE s.status = 'completed'
+                   ORDER BY s.updated_at DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['tckn' => $tckn]);
+            $results = $stmt->fetchAll();
+            
+            $this->logger->info('Found ' . count($results) . ' completed signatures.');
+
+            // Filter results where user was a signer
+            $completedSignatures = [];
+            foreach ($results as $result) {
+                $signatureGroups = json_decode($result['signature_groups'], true);
+                if ($signatureGroups === null) {
+                    $this->logger->error('Invalid JSON in signature_groups for signature ID: ' . $result['id']);
+                    continue;
+                }
+
+                foreach ($signatureGroups as $groupIndex => $group) {
+                    if (isset($group['signers']) && in_array($tckn, $group['signers'])) {
+                        $this->logger->info('Found completed signature for TCKN ' . $tckn . ' in group ' . ($groupIndex + 1));
+                        $completedSignatures[] = $result;
+                        break;
+                    }
+                }
+            }
+
+            $this->logger->info('Found ' . count($completedSignatures) . ' completed signatures for TCKN: ' . $tckn);
+            return $completedSignatures;
+        } catch (PDOException $e) {
+            $this->logger->error('Database error while fetching completed signatures: ' . $e->getMessage());
+            return [];
+        }
+    }
 }
