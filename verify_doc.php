@@ -207,8 +207,6 @@ $users = $userManager->getAllUsers();
     <div class="container py-4">
         <h1>Belge Doğrulama</h1>
 
-
-
         <?php
         // İmza durumunu göster
         if (isset($_GET['check_status'])) {
