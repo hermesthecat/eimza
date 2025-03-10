@@ -48,7 +48,8 @@ try {
     $host = $_SERVER['HTTP_HOST'];
 
     // Create file URL
-    $fileUrl = $protocol . $host . '/uploads/' . $signature['filename'];
+    //$fileUrl = $protocol . $host . '/uploads/' . $signature['filename'];
+    $fileUrl = $domain . '/uploads/' . $signature['filename'];
 
     // Prepare sign protocol URL
     $request = [
