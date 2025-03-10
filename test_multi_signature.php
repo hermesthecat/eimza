@@ -218,19 +218,21 @@ $users = $userManager->getAllUsers();
                 <div class="signature-type-selection">
                     <p><strong>İmza Tipi Seçin:</strong></p>
                     <label>
-                        <input type="radio" name="signature_type" value="chain" checked> İmza Zinciri
-                        <span class="tooltip">(İmzalar sırayla, bir grup diğerinden sonra)</span>
+                        <input type="radio" name="signature_type" value="chain"> Zincir İmza <span class="text-muted">(gruplar sırayla imzalar)</span>
                     </label>
                     <br>
-                    <label>
-                        <input type="radio" name="signature_type" value="parallel"> Paralel İmza
-                        <span class="tooltip">(Tüm gruplar aynı anda imzalayabilir)</span>
-                    </label>
                     <br>
                     <label>
-                        <input type="radio" name="signature_type" value="mixed"> Karışık İmza
-                        <span class="tooltip">(Gruplar sıralı, grup içi paralel imzalama)</span>
+                        <input type="radio" name="signature_type" value="parallel"> Paralel İmza <span class="text-muted">(tüm gruplar aynı anda imzalar)</span>
                     </label>
+                    <br>
+                    <br>
+                    <label>
+                        <input type="radio" name="signature_type" value="mixed"> Karışık İmza <span class="text-muted">(gruplar sıralı, grup içi paralel)</span>
+                    </label>
+                    <br>
+
+                    <br> <!-- Added line for spacing -->
                 </div>
 
                 <div id="signatureGroups">
