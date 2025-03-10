@@ -48,6 +48,12 @@
                         </li>
                     </ul>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="<?php echo $domain; ?>/verify_doc.php">
+                        <i class="fas fa-file-alt me-1"></i>
+                        Belge Doğrulama
+                    </a>
+                </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle active" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
                         <i class="fas fa-cogs me-1"></i>

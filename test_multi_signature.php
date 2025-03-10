@@ -17,7 +17,7 @@ $users = $userManager->getAllUsers();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Çoklu İmza Test Sayfası</title>
+    <title>Çoklu İmza Sayfası</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome for icons -->
@@ -205,7 +205,7 @@ $users = $userManager->getAllUsers();
     ?>
 
     <div class="container py-4">
-        <h1>Çoklu İmza Test Sayfası</h1>
+        <h1>Çoklu İmza Sayfası</h1>
 
         <div class="step">
             <h2>PDF Yükle ve İmza Sürecini Başlat</h2>
@@ -256,11 +256,11 @@ $users = $userManager->getAllUsers();
                         </div>
                     </div>
                 </div>
-                <div class="form-actions">
+                <div class="form-actions d-flex justify-content-between align-items-center">
                     <button type="button" class="addGroup">
                         <i class="fas fa-layer-group me-1"></i> Yeni Grup Ekle
                     </button>
-                    <input type="submit" name="init_process" value="İmza Sürecini Başlat" class="button">
+                    <input type="submit" name="init_process" value="İmza Sürecini Başlat" class="button ms-auto">
                 </div>
 
                 <script>
@@ -461,126 +461,7 @@ $users = $userManager->getAllUsers();
                 echo "</div>";
             }
         }
-
-        // İmza durumunu göster
-        if (isset($_GET['check_status'])) {
-            $filename = $_GET['check_status'];
-            $record = $signatureManager->getSignatureRecord($filename);
-
-            if ($record) {
-                echo "<div class='step'>";
-                echo "<h3>İmza Durumu</h3>";
-                echo "<p>Dosya: " . $record['original_filename'] . "</p>";
-                echo "<p>Genel Durum: " . $record['status'] . "</p>";
-
-                $signatureGroups = json_decode($record['signature_groups'], true);
-                $groupSignatures = json_decode($record['group_signatures'], true);
-                $groupStatus = json_decode($record['group_status'], true);
-                $currentGroup = $record['current_group'];
-
-                echo "<div class='groups-status'>";
-                foreach ($signatureGroups as $index => $group) {
-                    $groupNum = $index + 1;
-                    echo "<div class='group-status'>";
-                    echo "<h4>Grup " . $groupNum . "</h4>";
-
-                    // Grup durumu badge'i
-                    $statusClass = '';
-                    $statusText = '';
-                    switch ($groupStatus[$groupNum]) {
-                        case 'completed':
-                            $statusClass = 'completed';
-                            $statusText = 'Tamamlandı';
-                            break;
-                        case 'pending':
-                            $statusClass = $groupNum === $currentGroup ? 'active' : 'pending';
-                            $statusText = $groupNum === $currentGroup ? 'Aktif Grup' : 'Bekliyor';
-                            break;
-                    }
-                    echo "<div class='status-badge " . $statusClass . "'>" . $statusText . "</div>";
-
-                    // İmzacıları göster
-                    echo "<ul>";
-                    foreach ($group['signers'] as $signer) {
-                        $signed = false;
-                        $signatureDate = '';
-                        $signerName = '';
-
-                        // İmzacı adını bul
-                        foreach ($users as $user) {
-                            if ($user['tckn'] === $signer) {
-                                $signerName = $user['full_name'];
-                                break;
-                            }
-                        }
-
-                        // İmza kontrolü
-                        if (isset($groupSignatures[$groupNum])) {
-                            foreach ($groupSignatures[$groupNum] as $signature) {
-                                if ($signature['certificateSerialNumber'] === $signer) {
-                                    $signed = true;
-                                    $signatureDate = $signature['signatureDate'];
-                                    break;
-                                }
-                            }
-                        }
-
-                        $class = '';
-                        $status = '';
-                        if ($signed) {
-                            $class = 'signed';
-                            $status = '<span class="signature-date">✓ İmzalandı <br>(' . $signatureDate . ')</span>';
-                        } else if ($groupNum === $currentGroup) {
-                            $class = 'waiting';
-                            $status = '<span class="signature-status">İmza Bekleniyor</span>';
-                        }
-
-                        echo "<li class='" . $class . "'>";
-                        echo "<strong>" . $signerName . "</strong> (TC: " . $signer . ")";
-                        echo $status;
-                        echo "</li>";
-                    }
-                    echo "</ul>";
-                    echo "</div>";
-                }
-                echo "</div>";
-                echo "</div>";
-            }
-        }
         ?>
-
-        <div class="step">
-            <div class="card">
-                <div class="card-header">
-                    <h2 class="h5 mb-0">
-                        <i class="fas fa-search me-2"></i>
-                        İmza Durumu Kontrol Et
-                    </h2>
-                </div>
-                <div class="card-body">
-                    <form method="get" class="row g-3 align-items-end">
-                        <div class="col-md-8">
-                            <label for="check_status" class="form-label">
-                                <i class="fas fa-file-signature me-1"></i>
-                                Dosya Adı
-                            </label>
-                            <input type="text"
-                                class="form-control"
-                                id="check_status"
-                                name="check_status"
-                                placeholder="İmza durumunu kontrol etmek istediğiniz dosyanın adını girin"
-                                required>
-                        </div>
-                        <div class="col-md-4">
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-search me-2"></i>
-                                Durumu Kontrol Et
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- jQuery -->
