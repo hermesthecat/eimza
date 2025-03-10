@@ -28,9 +28,8 @@ $users = $userManager->getAllUsers();
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="<?php echo $domain; ?>/assets/css/style.css" rel="stylesheet">
     <style>
-
         h1 {
             font-size: 2.4rem;
             font-weight: 600;

@@ -4,7 +4,7 @@ require_once 'includes/logger.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ' . $domain . '/login.php');
     exit;
 }
 ?>
@@ -20,14 +20,14 @@ if (!isset($_SESSION['user_id'])) {
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="<?php echo $domain; ?>/assets/css/style.css" rel="stylesheet">
 </head>
 
 <body class="bg-light">
 
-<?php
-require_once 'navbar.php';
-?>
+    <?php
+    require_once 'navbar.php';
+    ?>
 
     <div class="container py-5">
         <!-- Alert Messages -->
@@ -137,6 +137,8 @@ require_once 'navbar.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        var site_url = "<?php echo $domain; ?>";
+
         // Show alert function
         function showAlert(message, type = 'danger') {
             const alertHtml = `
@@ -176,7 +178,7 @@ require_once 'navbar.php';
                 const formData = new FormData(this);
 
                 // Send file to server
-                const response = await fetch('sign.php', {
+                const response = await fetch(site_url + '/sign.php', {
                     method: 'POST',
                     body: formData
                 });

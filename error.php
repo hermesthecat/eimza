@@ -35,7 +35,7 @@ Logger::getInstance()->error("HTTP Error {$code}", $logContext);
     <title>Hata <?php echo $code; ?> - PDF İmzalama Sistemi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="<?php echo $domain; ?>/assets/css/style.css" rel="stylesheet">
     <style>
         .error-page {
             min-height: calc(100vh - 150px);
@@ -82,7 +82,7 @@ Logger::getInstance()->error("HTTP Error {$code}", $logContext);
             <div class="error-code"><?php echo $code; ?></div>
             <h1 class="h3 mb-3"><?php echo htmlspecialchars($error[0]); ?></h1>
             <div class="error-message"><?php echo htmlspecialchars($error[1]); ?></div>
-            <a href="<?php echo isset($_SESSION['user_id']) ? 'index.php' : 'login.php'; ?>" class="btn btn-primary btn-lg">
+            <a href="<?php echo $domain . (isset($_SESSION['user_id']) ? '/index.php' : '/login.php'); ?>" class="btn btn-primary btn-lg">
                 <i class="fas fa-<?php echo isset($_SESSION['user_id']) ? 'home' : 'sign-in-alt'; ?> me-2"></i>
                 <?php echo isset($_SESSION['user_id']) ? 'Ana Sayfaya Dön' : 'Giriş Yap'; ?>
             </a>

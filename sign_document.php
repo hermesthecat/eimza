@@ -5,7 +5,7 @@ require_once 'includes/SignatureManager.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ' . $domain . '/login.php');
     exit;
 }
 
@@ -32,15 +32,18 @@ if (isset($_POST['sign']) && isset($_POST['filename'])) {
 
         // İmza yetkisi kontrolü
         if ($signatureManager->checkSignaturePermission($filename, $certificateNo)) {
+
             // Base URL'i belirle
             $protocol = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https://" : "http://");
             $host = $_SERVER['HTTP_HOST'];
 
             // Callback URL'i oluştur
-            $callbackUrl = $protocol . $host . dirname($_SERVER['PHP_SELF']) . "/complete_signature.php";
+            //$callbackUrl = $protocol . $host . dirname($_SERVER['PHP_SELF']) . "/complete_signature.php";
+            $callbackUrl = $domain . "/complete_signature.php";
 
             // Dosya URL'i oluştur
-            $fileUrl = $protocol . $host . dirname($_SERVER['PHP_SELF']) . "/uploads/" . $filename;
+            //$fileUrl = $protocol . $host . dirname($_SERVER['PHP_SELF']) . "/uploads/" . $filename;
+            $fileUrl = $domain . "/uploads/" . $filename;
 
             // İmza isteği hazırla
             $request = [

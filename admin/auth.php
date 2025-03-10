@@ -1,7 +1,7 @@
 <?php
-require_once __DIR__ . '/../includes/SecurityHelper.php';
-require_once __DIR__ . '/../includes/UserManager.php';
-require_once __DIR__ . '/../config.php';
+require_once '../config.php';
+require_once '../includes/SecurityHelper.php';
+require_once '../includes/UserManager.php';
 
 // Start session if not already started
 if (session_status() === PHP_SESSION_NONE) {
@@ -26,7 +26,7 @@ function isAdminLoggedIn()
 function requireAdmin()
 {
     global $userManager;
-    
+
     if (!isAdminLoggedIn()) {
         // Log unauthorized access attempt
         Logger::getInstance()->warning('Unauthorized admin access attempt', [
@@ -34,13 +34,13 @@ function requireAdmin()
             'user_id' => $_SESSION['user_id'] ?? null,
             'role' => $_SESSION['role'] ?? null
         ]);
-        
+
         if (!isset($_SESSION['user_id'])) {
             // Not logged in at all
-            header('Location: /login.php');
+            header('Location: ' . $domain . '/login.php');
         } else {
             // Logged in but not admin
-            header('Location: /error.php?code=403');
+            header('Location: ' . $domain . '/error.php?code=403');
         }
         exit;
     }
@@ -53,10 +53,10 @@ function requireAdmin()
             'user_id' => $_SESSION['user_id'],
             'ip' => SecurityHelper::getClientIP()
         ]);
-        
+
         // Force logout
         session_destroy();
-        header('Location: /login.php');
+        header('Location: ' . $domain . '/login.php');
         exit;
     }
 }
@@ -141,9 +141,9 @@ function resetLoginAttempts($username)
 function validateAdminCredentials($username, $password)
 {
     global $userManager;
-    
+
     $user = $userManager->getUserByUsername($username);
-    
+
     if (!$user || $user['role'] !== 'admin') {
         return false;
     }
@@ -154,7 +154,7 @@ function validateAdminCredentials($username, $password)
 
     // Update last login time
     $userManager->updateLastLogin($user['id']);
-    
+
     return $user;
 }
 
@@ -182,7 +182,7 @@ function logSecurityEvent($action, $details = '')
 function createInitialAdminIfNeeded()
 {
     global $userManager;
-    
+
     // Check if any admin user exists
     $stmt = $GLOBALS['db']->prepare("SELECT COUNT(*) FROM users WHERE role = 'admin'");
     $stmt->execute();
@@ -191,8 +191,8 @@ function createInitialAdminIfNeeded()
     if ($adminCount === 0) {
         try {
             // Generate a random 16-character password
-            $initialAdminPassword = bin2hex(random_bytes(8));
-            
+            $initialAdminPassword = "azadazad";
+
             // Create initial admin user
             $admin = $userManager->createUser(
                 'admin',

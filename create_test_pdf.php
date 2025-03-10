@@ -4,13 +4,13 @@ require_once 'includes/logger.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ' . $domain . '/login.php');
     exit;
 }
 
 // Check if user is an admin
 if ($_SESSION['role'] !== 'admin') {
-    header('Location: error.php?code=403');
+    header('Location: ' . $domain . '/error.php?code=403');
     exit;
 }
 
@@ -74,7 +74,7 @@ if (isset($_POST['create'])) {
     <title>Test PDF Oluştur - PDF İmzalama Sistemi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="<?php echo $domain; ?>/assets/css/style.css" rel="stylesheet">
 </head>
 
 <body class="bg-light">
@@ -105,9 +105,9 @@ if (isset($_POST['create'])) {
 
                         <form method="post" class="mt-4">
                             <div class="d-flex justify-content-between">
-                                <a href="admin/signatures.php" class="btn btn-secondary">
+                                <a href="<?php echo $domain; ?>/index.php" class="btn btn-secondary">
                                     <i class="fas fa-arrow-left me-2"></i>
-                                    Yönetim Paneli
+                                    Ana Sayfa
                                 </a>
                                 <button type="submit" name="create" class="btn btn-primary">
                                     <i class="fas fa-file-pdf me-2"></i>

@@ -8,7 +8,7 @@ $userManager = new UserManager($db, Logger::getInstance());
 
 // Already logged in users should be redirected to index.php
 if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
+    header('Location: ' . $domain . '/index.php');
     exit;
 }
 
@@ -36,10 +36,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'username' => $username,
             'ip' => SecurityHelper::getClientIP()
         ]);
-    }
-    else {
+    } else {
         $user = $userManager->getUserByUsername($username);
-        
+
         if ($user && $userManager->verifyPassword($password, $user['password_hash'])) {
             // Set session variables
             $_SESSION['user_id'] = $user['id'];
@@ -60,9 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Redirect based on role
             if ($user['role'] === 'admin') {
-                header('Location: index.php');
+                header('Location: '.$domain.'/index.php');
             } else {
-                header('Location: index.php');
+                header('Location: '.$domain.'/index.php');
             }
             exit;
         } else {
@@ -81,6 +80,7 @@ $csrf_token = SecurityHelper::generateCsrfToken();
 ?>
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -96,27 +96,32 @@ $csrf_token = SecurityHelper::generateCsrfToken();
             align-items: center;
             background-color: #f8f9fa;
         }
+
         .login-form {
             max-width: 400px;
             width: 100%;
             padding: 2rem;
         }
+
         .card {
             border: none;
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
         }
+
         .card-header {
             background: #007bff;
             color: white;
             border-bottom: none;
             padding: 1.5rem;
         }
+
         .form-control:focus {
             border-color: #007bff;
             box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="row justify-content-center">
@@ -172,4 +177,5 @@ $csrf_token = SecurityHelper::generateCsrfToken();
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

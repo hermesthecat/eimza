@@ -6,7 +6,8 @@ class Logger
 
     private function __construct()
     {
-        $this->logFile = __DIR__ . '/../logs/app.log';
+        $date = date('Y-m-d');
+        $this->logFile = __DIR__ . "/../logs/app-$date.log";
         $this->ensureLogDirectoryExists();
     }
 

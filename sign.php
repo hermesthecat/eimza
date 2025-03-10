@@ -104,7 +104,8 @@ try {
     $host = $_SERVER['HTTP_HOST'];
 
     // Create file URL
-    $fileUrl = $protocol . $host . '/uploads/' . $filename;
+    //$fileUrl = $protocol . $host . '/uploads/' . $filename;
+    $fileUrl = $domain . '/uploads/' . $filename;
 
     // Log the generated URL for debugging
     Logger::getInstance()->debug("Generated file URL: $fileUrl", [
@@ -129,7 +130,7 @@ try {
                 ]
             ]
         ],
-        'responseUrl' => $protocol . $host . '/verify.php'
+        'responseUrl' => $domain . '/verify.php'
     ];
 
     // Generate sign protocol URL

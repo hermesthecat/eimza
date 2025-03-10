@@ -40,6 +40,12 @@
                                 Tamamlanan İmzalar
                             </a>
                         </li>
+                        <li>
+                            <a class="dropdown-item" href="<?php echo $domain; ?>/sign_document.php">
+                                <i class="fas fa-file-signature me-1"></i>
+                                İmzada Bekleyenler v2
+                            </a>
+                        </li>
                     </ul>
                 </li>
                 <li class="nav-item dropdown">

@@ -65,7 +65,7 @@ $totalPages = ceil($totalSignatures / $perPage);
 
 <body class="bg-light">
 
-<?php
+    <?php
     require_once '../navbar.php';
     ?>
 
@@ -101,7 +101,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                                     <td>
                                         <?= htmlspecialchars($signature['original_filename']) ?>
                                         <?php if ($signature['status'] === 'completed'): ?>
-                                            <a href="../uploads/<?= htmlspecialchars($signature['filename']) ?>"
+                                            <a href="<?php echo $domain; ?>/uploads/<?= htmlspecialchars($signature['filename']) ?>"
                                                 target="_blank" class="text-primary ms-2">
                                                 <i class="fas fa-download"></i>
                                             </a>
@@ -184,7 +184,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                                             <i class="fas fa-info-circle"></i>
                                         </button>
                                         <?php if ($signature['status'] === 'failed'): ?>
-                                            <form method="POST" action="retry.php" class="d-inline">
+                                            <form method="POST" action="<?php echo $domain; ?>/retry.php" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                                 <input type="hidden" name="id" value="<?= htmlspecialchars($signature['id']) ?>">
                                                 <button type="submit" class="btn btn-sm btn-warning" title="Yeniden Dene">
@@ -336,7 +336,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                 'pending': 'Bekliyor',
                 'completed': 'Tamamlandı',
                 'failed': 'Başarısız'
-            }[signature.status];
+            } [signature.status];
             $('#generalStatus').text(statusText);
             $('#lastUpdate').text(new Date(signature.created_at).toLocaleString('tr-TR'));
 

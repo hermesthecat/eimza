@@ -10,7 +10,7 @@ $userManager = new UserManager($db, Logger::getInstance());
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+    header('Location: ' . $domain . '/login.php');
     exit;
 }
 
@@ -39,7 +39,7 @@ $logger->info('User accessing waiting_sign.php', [
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="assets/css/style.css" rel="stylesheet">
+    <link href="<?php echo $domain; ?>/assets/css/style.css" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -164,7 +164,7 @@ $logger->info('User accessing waiting_sign.php', [
                             </div>
                         </div>
                         <?php if ($document['current_group_signer']): ?>
-                            <button class="sign-button" onclick="location.href='complete_signature.php?id=<?= $document['id'] ?>'">
+                            <button class="sign-button" onclick="location.href='<?php echo $domain; ?>/complete_signature.php?id=<?= $document['id'] ?>'">
                                 <i class="fas fa-signature me-1"></i>
                                 İmzala
                             </button>
