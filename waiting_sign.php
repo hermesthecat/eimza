@@ -127,39 +127,9 @@ $logger->info('User accessing waiting_sign.php', [
 </head>
 
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <i class="fas fa-file-signature me-2"></i>
-                PDF İmzalama Sistemi
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php">
-                            <i class="fas fa-home me-1"></i>
-                            Ana Sayfa
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="waiting_sign.php">
-                            <i class="fas fa-file-signature me-1"></i>
-                            İmza Bekleyenler
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="test_multi_signature.php">
-                            <i class="fas fa-users me-1"></i>
-                            Çoklu İmza
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php
+    require_once 'navbar.php';
+    ?>
 
     <div class="container py-4">
         <h1 class="mb-4">İmza Bekleyen Belgelerim</h1>
@@ -167,7 +137,7 @@ $logger->info('User accessing waiting_sign.php', [
         <?php
         // Get pending signatures for current user
         $pendingDocuments = $signatureManager->getPendingSignatures($currentUser['tckn']);
-        
+
         // Log pending documents information
         $logger->info('Pending documents for user', [
             'user_id' => $userId,

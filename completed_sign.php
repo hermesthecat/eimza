@@ -9,7 +9,6 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
 $userManager = new UserManager($db, Logger::getInstance());
 
 // Check if user is logged in
-session_start();
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
@@ -28,6 +27,7 @@ $logger->info('User accessing completed_sign.php', [
 ?>
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -41,14 +41,6 @@ $logger->info('User accessing completed_sign.php', [
     <!-- Custom CSS -->
     <link href="assets/css/style.css" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            margin: 0;
-            background: #f0f2f5;
-            color: #1a1a1a;
-            line-height: 1.6;
-        }
-
         .documents-list {
             background: white;
             border-radius: 8px;
@@ -120,46 +112,11 @@ $logger->info('User accessing completed_sign.php', [
         }
     </style>
 </head>
+
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="index.php">
-                <i class="fas fa-file-signature me-2"></i>
-                PDF İmzalama Sistemi
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="index.php">
-                            <i class="fas fa-home me-1"></i>
-                            Ana Sayfa
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="waiting_sign.php">
-                            <i class="fas fa-file-signature me-1"></i>
-                            İmza Bekleyenler
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="completed_sign.php">
-                            <i class="fas fa-check-circle me-1"></i>
-                            İmzalananlar
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="test_multi_signature.php">
-                            <i class="fas fa-users me-1"></i>
-                            Çoklu İmza
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <?php
+    require_once 'navbar.php';
+    ?>
 
     <div class="container py-4">
         <h1 class="mb-4">İmzalanmış Belgelerim</h1>
@@ -167,7 +124,7 @@ $logger->info('User accessing completed_sign.php', [
         <?php
         // Get completed signatures for current user
         $completedDocuments = $signatureManager->getCompletedSignatures($currentUser['tckn']);
-        
+
         // Log completed documents information
         $logger->info('Completed documents for user', [
             'user_id' => $userId,
@@ -215,4 +172,5 @@ $logger->info('User accessing completed_sign.php', [
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

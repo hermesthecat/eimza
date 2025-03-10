@@ -18,6 +18,10 @@ require_once __DIR__ . '/includes/SecurityHelper.php';
 // Set security headers
 SecurityHelper::setSecurityHeaders();
 
+// Create dynamic domain URL with HTTP/HTTPS check
+// Dinamik domain URL'si oluştur (HTTP/HTTPS kontrolü ile)
+$domain = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]";
+
 // Directory paths
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
 define('TEMP_DIR', __DIR__ . '/temp/');
