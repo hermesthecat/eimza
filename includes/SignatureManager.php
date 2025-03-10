@@ -512,8 +512,10 @@ class SignatureManager
             }
 
             // Mevcut gruptaki imzacıları kontrol et
-            if (!isset($signatureGroups[$currentGroup - 1]) ||
-                !isset($signatureGroups[$currentGroup - 1]['signers'])) {
+            if (
+                !isset($signatureGroups[$currentGroup - 1]) ||
+                !isset($signatureGroups[$currentGroup - 1]['signers'])
+            ) {
                 throw new Exception('Geçersiz grup yapısı.');
             }
 
@@ -526,6 +528,59 @@ class SignatureManager
         } catch (PDOException $e) {
             $this->logger->error('Database error while checking next signer: ' . $e->getMessage());
             throw new Exception('İmzacı kontrolü yapılamadı.');
+        }
+    }
+
+    /**
+     * Get pending signatures for a user
+     * @param string $tckn The user's TCKN
+     * @return array Array of pending signatures
+     */
+    public function getPendingSignatures($tckn)
+    {
+        try {
+            // First, get all signatures that are not completed
+            $this->logger->info('Fetching pending signatures for TCKN: ' . $tckn);
+            
+            $sql = "SELECT s.*,
+                   CASE WHEN JSON_CONTAINS(
+                       JSON_EXTRACT(s.signature_groups, CONCAT('$[', s.current_group - 1, '].signers')),
+                       CONCAT('\"', :tckn, '\"')
+                   ) THEN 1 ELSE 0 END as current_group_signer,
+                   s.current_group as group_num
+                   FROM signatures s
+                   WHERE s.status != 'completed'
+                   ORDER BY s.created_at DESC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute(['tckn' => $tckn]);
+            $results = $stmt->fetchAll();
+            
+            $this->logger->info('Found ' . count($results) . ' non-completed signatures.');
+
+            // Filter results where user is a signer
+            $pendingSignatures = [];
+            foreach ($results as $result) {
+                $signatureGroups = json_decode($result['signature_groups'], true);
+                if ($signatureGroups === null) {
+                    $this->logger->error('Invalid JSON in signature_groups for signature ID: ' . $result['id']);
+                    continue;
+                }
+
+                foreach ($signatureGroups as $groupIndex => $group) {
+                    if (isset($group['signers']) && in_array($tckn, $group['signers'])) {
+                        $this->logger->info('Found pending signature for TCKN ' . $tckn . ' in group ' . ($groupIndex + 1));
+                        $pendingSignatures[] = $result;
+                        break;
+                    }
+                }
+            }
+
+            $this->logger->info('Found ' . count($pendingSignatures) . ' pending signatures for TCKN: ' . $tckn);
+            return $pendingSignatures;
+        } catch (PDOException $e) {
+            $this->logger->error('Database error while fetching pending signatures: ' . $e->getMessage());
+            return [];
         }
     }
 }
