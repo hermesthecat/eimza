@@ -126,9 +126,19 @@ $users = $userManager->getAllUsers();
             align-items: center;
         }
 
-        .signer-select {
+        .select-container {
             flex: 1;
             min-width: 300px;
+            margin-bottom: 10px;
+        }
+
+        .signer-select {
+            width: 100%;
+        }
+
+        /* Fix Select2 container width */
+        .select2 {
+            width: 100% !important;
         }
 
         .addSigner,
@@ -266,14 +276,16 @@ $users = $userManager->getAllUsers();
                     <div class="group" data-group="1">
                         <h3>Grup 1:</h3>
                         <div class="signers">
-                            <select name="groups[1][]" class="form-select signer-select" required>
-                                <option value="">İmzacı Seçin</option>
-                                <?php foreach ($users as $user): ?>
-                                    <option value="<?= htmlspecialchars($user['tckn']) ?>">
-                                        <?= htmlspecialchars($user['full_name']) ?> (<?= htmlspecialchars($user['tckn']) ?>)
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div class="select-container mb-2">
+                                <select name="groups[1][]" class="form-select signer-select" required>
+                                    <option value="">İmzacı Seçin</option>
+                                    <?php foreach ($users as $user): ?>
+                                        <option value="<?= htmlspecialchars($user['tckn']) ?>">
+                                            <?= htmlspecialchars($user['full_name']) ?> (<?= htmlspecialchars($user['tckn']) ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
                             <button type="button" class="addSigner">
                                 <i class="fas fa-plus me-1"></i> İmzacı Ekle
                             </button>
@@ -290,17 +302,50 @@ $users = $userManager->getAllUsers();
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
                         // Initialize Select2
-                        function initSelect2(element) {
-                            $(element).select2({
+                        // Function to create and initialize a new select container
+                        function createSignerSelect(groupNum) {
+                            const container = document.createElement('div');
+                            container.className = 'select-container mb-2';
+                            container.innerHTML = `
+                                <select name="groups[${groupNum}][]" class="form-select signer-select" required>
+                                    <option value="">İmzacı Seçin</option>
+                                    <?php foreach ($users as $user): ?>
+                                        <option value="<?= htmlspecialchars($user['tckn']) ?>">
+                                            <?= htmlspecialchars($user['full_name']) ?> (<?= htmlspecialchars($user['tckn']) ?>)
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            `;
+
+                            const select = container.querySelector('select');
+                            $(select).select2({
                                 theme: 'bootstrap-5',
                                 width: '100%',
-                                placeholder: 'İmzacı Seçin'
+                                placeholder: 'İmzacı Seçin',
+                                dropdownParent: container
                             });
+
+                            return container;
                         }
 
-                        // Initialize existing selects
+                        // Initialize initial select element
                         document.querySelectorAll('.signer-select').forEach(select => {
-                            initSelect2(select);
+                            const existingContainer = select.closest('.select-container');
+                            if (existingContainer) return; // Skip if already in a container
+
+                            // Create container and move select into it
+                            const container = document.createElement('div');
+                            container.className = 'select-container mb-2';
+                            select.parentNode.insertBefore(container, select);
+                            container.appendChild(select);
+
+                            // Initialize Select2
+                            $(select).select2({
+                                theme: 'bootstrap-5',
+                                width: '100%',
+                                placeholder: 'İmzacı Seçin',
+                                dropdownParent: container
+                            });
                         });
 
                         // İmza tipi seçimi değiştiğinde
@@ -324,29 +369,21 @@ $users = $userManager->getAllUsers();
                             });
                         });
 
-                        // Create new select with options
-                        function createSelect(groupNum) {
-                            const select = document.createElement('select');
-                            select.name = `groups[${groupNum}][]`;
-                            select.className = 'form-select signer-select';
-                            select.required = true;
-                            
-                            // Copy options from the first select
-                            const firstSelect = document.querySelector('.signer-select');
-                            select.innerHTML = firstSelect.innerHTML;
-                            
-                            return select;
-                        }
+                        // Empty - these functions are no longer needed
 
-                        // Yeni imzacı ekleme
+                        // Handle add signer button clicks
                         document.addEventListener('click', function(e) {
                             if (e.target.classList.contains('addSigner')) {
                                 const group = e.target.closest('.group');
+                                if (!group) return;
+
                                 const signersDiv = group.querySelector('.signers');
+                                if (!signersDiv) return;
+
                                 const groupNum = group.dataset.group;
-                                const select = createSelect(groupNum);
-                                signersDiv.insertBefore(select, e.target);
-                                initSelect2(select);
+                                const container = createSignerSelect(groupNum);
+                                
+                                signersDiv.insertBefore(container, e.target);
                             }
                         });
 
@@ -367,25 +404,24 @@ $users = $userManager->getAllUsers();
                                 groupTitle = `Karma Grup ${newGroupNum}:`;
                             }
 
+                            // Create group structure
                             groupDiv.innerHTML = `
                                 <h3>${groupTitle}</h3>
                                 <div class="signers">
-                                    <select name="groups[${newGroupNum}][]" class="form-select signer-select" required>
-                                        <option value="">İmzacı Seçin</option>
-                                        <?php foreach ($users as $user): ?>
-                                            <option value="<?= htmlspecialchars($user['tckn']) ?>">
-                                                <?= htmlspecialchars($user['full_name']) ?> (<?= htmlspecialchars($user['tckn']) ?>)
-                                            </option>
-                                        <?php endforeach; ?>
-                                    </select>
                                     <button type="button" class="addSigner">
                                         <i class="fas fa-plus me-1"></i> İmzacı Ekle
                                     </button>
                                 </div>
                             `;
 
+                            // Add to DOM
                             document.querySelector('#signatureGroups').appendChild(groupDiv);
-                            initSelect2(groupDiv.querySelector('.signer-select'));
+
+                            // Add initial select
+                            const signersDiv = groupDiv.querySelector('.signers');
+                            const addButton = groupDiv.querySelector('.addSigner');
+                            const container = createSignerSelect(newGroupNum);
+                            signersDiv.insertBefore(container, addButton);
                         });
                     });
                 </script>
