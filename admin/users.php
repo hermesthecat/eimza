@@ -2,6 +2,7 @@
 require_once '../config.php';
 require_once '../includes/logger.php';
 require_once '../includes/UserManager.php';
+require_once '../includes/SecurityHelper.php';
 require_once 'auth.php';
 
 // Initialize UserManager
@@ -14,43 +15,55 @@ $error = '';
 $success = '';
 
 // Generate CSRF token
-$csrf_token = generateCsrfToken();
+$csrf_token = SecurityHelper::generateCsrfToken();
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
+    if (!SecurityHelper::validateCsrfToken($_POST['csrf_token'] ?? '')) {
         $error = 'Geçersiz form gönderimi';
         Logger::getInstance()->warning("CSRF token validation failed in users.php", [
-            'admin' => getAdminUsername(),
-            'ip' => getClientIP()
+            'user_id' => $_SESSION['user_id'],
+            'username' => $_SESSION['username'],
+            'ip' => SecurityHelper::getClientIP()
         ]);
     } else {
         $action = $_POST['action'] ?? '';
 
         switch ($action) {
             case 'create':
-                if (empty($_POST['username']) || empty($_POST['password']) || empty($_POST['email'])) {
+                if (empty($_POST['username']) || empty($_POST['password']) || empty($_POST['email']) || empty($_POST['tckn'])) {
                     $error = 'Tüm alanları doldurun';
                 } else {
                     $username = $_POST['username'];
                     $password = $_POST['password'];
                     $email = $_POST['email'];
                     $fullName = $_POST['full_name'] ?? '';
+                    $tckn = $_POST['tckn'];
                     $role = $_POST['role'] ?? 'user';
 
                     if (!SecurityHelper::isStrongPassword($password)) {
                         $error = 'Şifre güvenli değil. En az 8 karakter uzunluğunda olmalı ve büyük/küçük harf, rakam ve özel karakter içermeli.';
                     } else {
-                        $result = $userManager->createUser($username, $password, $fullName, $email, $role);
-                        if ($result) {
-                            $success = 'Kullanıcı başarıyla oluşturuldu';
-                            Logger::getInstance()->info("New user created", [
+                        try {
+                            $result = $userManager->createUser($username, $password, $fullName, $email, $role, $tckn);
+                            if ($result) {
+                                $success = 'Kullanıcı başarıyla oluşturuldu';
+                                Logger::getInstance()->info("New user created", [
+                                    'created_user' => $username,
+                                    'role' => $role,
+                                    'admin_id' => $_SESSION['user_id'],
+                                    'admin_username' => $_SESSION['username']
+                                ]);
+                            } else {
+                                $error = 'Kullanıcı oluşturulurken bir hata oluştu';
+                            }
+                        } catch (Exception $e) {
+                            $error = 'Kullanıcı oluşturulurken bir hata oluştu: ' . $e->getMessage();
+                            Logger::getInstance()->error("Error creating user", [
+                                'error' => $e->getMessage(),
                                 'username' => $username,
-                                'role' => $role,
-                                'created_by' => getAdminUsername()
+                                'admin_id' => $_SESSION['user_id']
                             ]);
-                        } else {
-                            $error = 'Kullanıcı oluşturulurken bir hata oluştu';
                         }
                     }
                 }
@@ -71,11 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if (!empty($_POST['role'])) {
                         $updates['role'] = $_POST['role'];
                     }
+                    if (!empty($_POST['tckn'])) {
+                        $updates['tckn'] = $_POST['tckn'];
+                    }
                     
                     try {
                         $stmt = $db->prepare("
                             UPDATE users 
-                            SET email = :email, full_name = :full_name, role = :role
+                            SET email = :email, full_name = :full_name, role = :role, tckn = :tckn
                             WHERE id = :id
                         ");
                         
@@ -83,19 +99,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             ':email' => $updates['email'],
                             ':full_name' => $updates['full_name'],
                             ':role' => $updates['role'],
+                            ':tckn' => $updates['tckn'],
                             ':id' => $userId
                         ]);
                         
                         $success = 'Kullanıcı bilgileri güncellendi';
                         Logger::getInstance()->info("User updated", [
-                            'user_id' => $userId,
-                            'updated_by' => getAdminUsername()
+                            'updated_user_id' => $userId,
+                            'admin_id' => $_SESSION['user_id'],
+                            'admin_username' => $_SESSION['username']
                         ]);
                     } catch (PDOException $e) {
                         $error = 'Kullanıcı güncellenirken bir hata oluştu';
                         Logger::getInstance()->error("Error updating user", [
                             'error' => $e->getMessage(),
-                            'user_id' => $userId
+                            'user_id' => $userId,
+                            'admin_id' => $_SESSION['user_id']
                         ]);
                     }
                 }
@@ -114,7 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $success = 'Şifre başarıyla güncellendi';
                         Logger::getInstance()->info("Password changed", [
                             'user_id' => $userId,
-                            'changed_by' => getAdminUsername()
+                            'admin_id' => $_SESSION['user_id'],
+                            'admin_username' => $_SESSION['username']
                         ]);
                     } else {
                         $error = 'Şifre güncellenirken bir hata oluştu';
@@ -128,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = 'Kullanıcı ID gerekli';
                 } else {
                     // Prevent self-deletion
-                    if ($userId == $_SESSION['admin_id']) {
+                    if ($userId == $_SESSION['user_id']) {
                         $error = 'Kendi hesabınızı silemezsiniz';
                     } else {
                         try {
@@ -137,14 +157,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             
                             $success = 'Kullanıcı silindi';
                             Logger::getInstance()->info("User deleted", [
-                                'user_id' => $userId,
-                                'deleted_by' => getAdminUsername()
+                                'deleted_user_id' => $userId,
+                                'admin_id' => $_SESSION['user_id'],
+                                'admin_username' => $_SESSION['username']
                             ]);
                         } catch (PDOException $e) {
                             $error = 'Kullanıcı silinirken bir hata oluştu';
                             Logger::getInstance()->error("Error deleting user", [
                                 'error' => $e->getMessage(),
-                                'user_id' => $userId
+                                'user_id' => $userId,
+                                'admin_id' => $_SESSION['user_id']
                             ]);
                         }
                     }
@@ -157,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Get list of users
 try {
     $stmt = $db->query("
-        SELECT id, username, full_name, email, role, last_login, created_at 
+        SELECT id, username, full_name, email, tckn, role, last_login, created_at 
         FROM users 
         ORDER BY created_at DESC
     ");
@@ -181,6 +203,65 @@ try {
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 </head>
 <body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="../index.php">
+                <i class="fas fa-file-signature me-2"></i>
+                PDF İmzalama Sistemi
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="../index.php">
+                            <i class="fas fa-home me-1"></i>
+                            Ana Sayfa
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../sign_document.php">
+                            <i class="fas fa-file-signature me-1"></i>
+                            İmza Bekleyenler
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="../test_multi_signature.php">
+                            <i class="fas fa-users me-1"></i>
+                            Çoklu İmza
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="signatures.php">
+                            <i class="fas fa-cogs me-1"></i>
+                            Yönetim Paneli
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            <?= htmlspecialchars($_SESSION['full_name']) ?>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">TCKN: <?= htmlspecialchars($_SESSION['tckn']) ?></h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="../logout.php">
+                                    <i class="fas fa-sign-out-alt me-1"></i>
+                                    Çıkış Yap
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
     <div class="container-fluid py-4">
         <div class="row mb-4">
             <div class="col">
@@ -214,27 +295,32 @@ try {
                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                     <input type="hidden" name="action" value="create">
                     
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Kullanıcı Adı</label>
                         <input type="text" name="username" class="form-control" required>
                     </div>
                     
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Şifre</label>
                         <input type="password" name="password" class="form-control" required>
                     </div>
                     
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <label class="form-label">TCKN</label>
+                        <input type="text" name="tckn" class="form-control" required pattern="\d{11}" maxlength="11">
+                    </div>
+                    
+                    <div class="col-md-3">
                         <label class="form-label">E-posta</label>
                         <input type="email" name="email" class="form-control" required>
                     </div>
                     
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Ad Soyad</label>
-                        <input type="text" name="full_name" class="form-control">
+                        <input type="text" name="full_name" class="form-control" required>
                     </div>
                     
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label class="form-label">Rol</label>
                         <select name="role" class="form-select" required>
                             <option value="user">Kullanıcı</option>
@@ -266,6 +352,7 @@ try {
                                 <th>ID</th>
                                 <th>Kullanıcı Adı</th>
                                 <th>Ad Soyad</th>
+                                <th>TCKN</th>
                                 <th>E-posta</th>
                                 <th>Rol</th>
                                 <th>Son Giriş</th>
@@ -279,6 +366,7 @@ try {
                                 <td><?= htmlspecialchars($user['id']) ?></td>
                                 <td><?= htmlspecialchars($user['username']) ?></td>
                                 <td><?= htmlspecialchars($user['full_name']) ?></td>
+                                <td><?= htmlspecialchars($user['tckn']) ?></td>
                                 <td><?= htmlspecialchars($user['email']) ?></td>
                                 <td>
                                     <span class="badge bg-<?= $user['role'] === 'admin' ? 'danger' : 'primary' ?>">
@@ -291,7 +379,7 @@ try {
                                     <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editUser<?= $user['id'] ?>">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <?php if ($user['id'] != $_SESSION['admin_id']): ?>
+                                    <?php if ($user['id'] != $_SESSION['user_id']): ?>
                                     <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteUser<?= $user['id'] ?>">
                                         <i class="fas fa-trash"></i>
                                     </button>
@@ -320,7 +408,12 @@ try {
                                                 
                                                 <div class="mb-3">
                                                     <label class="form-label">Ad Soyad</label>
-                                                    <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($user['full_name']) ?>">
+                                                    <input type="text" name="full_name" class="form-control" value="<?= htmlspecialchars($user['full_name']) ?>" required>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label">TCKN</label>
+                                                    <input type="text" name="tckn" class="form-control" value="<?= htmlspecialchars($user['tckn']) ?>" required pattern="\d{11}" maxlength="11">
                                                 </div>
                                                 
                                                 <div class="mb-3">
@@ -358,7 +451,7 @@ try {
                             </div>
 
                             <!-- Delete User Modal -->
-                            <?php if ($user['id'] != $_SESSION['admin_id']): ?>
+                            <?php if ($user['id'] != $_SESSION['user_id']): ?>
                             <div class="modal fade" id="deleteUser<?= $user['id'] ?>" tabindex="-1">
                                 <div class="modal-dialog">
                                     <div class="modal-content">

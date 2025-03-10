@@ -2,6 +2,7 @@
 require_once '../config.php';
 require_once '../includes/logger.php';
 require_once '../includes/SignatureManager.php';
+require_once '../includes/SecurityHelper.php';
 require_once 'auth.php';
 
 // Yetkilendirme kontrolü
@@ -9,7 +10,7 @@ requireAdmin();
 
 try {
     // CSRF kontrolü
-    if (!isset($_POST['csrf_token']) || !validateCsrfToken($_POST['csrf_token'])) {
+    if (!isset($_POST['csrf_token']) || !SecurityHelper::validateCsrfToken($_POST['csrf_token'])) {
         throw new Exception('Geçersiz form gönderimi');
     }
 
@@ -37,6 +38,11 @@ try {
         throw new Exception('İmzalanacak dosya bulunamadı');
     }
 
+    // Validate file path
+    if (!SecurityHelper::isValidPath($signature['filename'])) {
+        throw new Exception('Geçersiz dosya yolu');
+    }
+
     // Get server protocol and host
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https://' : 'http://';
     $host = $_SERVER['HTTP_HOST'];
@@ -55,7 +61,7 @@ try {
                     'y' => $signature['pdf_signature_pos_y'],
                     'width' => $signature['pdf_signature_width'],
                     'height' => $signature['pdf_signature_height'],
-                    'signatureName' => 'Elektronik İmza',
+                    'signatureName' => $_SESSION['full_name'], // Use authenticated user's name
                     'reason' => $signature['signature_reason'],
                     'location' => $signature['signature_location']
                 ]
@@ -72,15 +78,37 @@ try {
     // Generate sign protocol URL
     $signUrl = 'sign://?xsjson=' . base64_encode(json_encode($request));
 
-    // Log retry attempt
-    Logger::getInstance()->info("Signature retry initiated for ID: $signatureId by " . getAdminUsername());
+    // Log retry attempt with full context
+    Logger::getInstance()->info("Signature retry initiated", [
+        'signature_id' => $signatureId,
+        'user_id' => $_SESSION['user_id'],
+        'username' => $_SESSION['username'],
+        'full_name' => $_SESSION['full_name'],
+        'tckn' => $_SESSION['tckn'],
+        'ip' => SecurityHelper::getClientIP(),
+        'filename' => $signature['filename']
+    ]);
+
+    // Store signature details in session
+    $_SESSION['pending_signature'] = [
+        'id' => $signatureId,
+        'filename' => $signature['filename'],
+        'url' => $signUrl
+    ];
 
     // Redirect with success message
     $_SESSION['success'] = 'İmzalama işlemi yeniden başlatıldı';
     header('Location: signatures.php');
     exit;
 } catch (Exception $e) {
-    Logger::getInstance()->error('Signature retry error: ' . $e->getMessage());
+    // Log error with full context
+    Logger::getInstance()->error('Signature retry error', [
+        'error' => $e->getMessage(),
+        'user_id' => $_SESSION['user_id'],
+        'username' => $_SESSION['username'],
+        'ip' => SecurityHelper::getClientIP(),
+        'signature_id' => $signatureId ?? null
+    ]);
 
     $_SESSION['error'] = $e->getMessage();
     header('Location: signatures.php');

@@ -1,3 +1,13 @@
+<?php
+require_once 'config.php';
+require_once 'includes/logger.php';
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="tr">
 
@@ -24,7 +34,13 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="index.php">
+                            <i class="fas fa-home me-1"></i>
+                            Ana Sayfa
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="sign_document.php">
                             <i class="fas fa-file-signature me-1"></i>
@@ -36,6 +52,32 @@
                             <i class="fas fa-users me-1"></i>
                             Çoklu İmza
                         </a>
+                    </li>
+                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin/signatures.php">
+                            <i class="fas fa-cogs me-1"></i>
+                            Yönetim Paneli
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            <?= htmlspecialchars($_SESSION['full_name']) ?>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">TCKN: <?= htmlspecialchars($_SESSION['tckn']) ?></h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="logout.php">
+                                    <i class="fas fa-sign-out-alt me-1"></i>
+                                    Çıkış Yap
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -50,7 +92,7 @@
             <div class="col-md-8">
                 <div class="card shadow">
                     <div class="card-header">
-                        <h4 class="mb-0 text-white">
+                        <h4 class="mb-0">
                             <i class="fas fa-file-signature me-2"></i>PDF İmzalama
                         </h4>
                     </div>

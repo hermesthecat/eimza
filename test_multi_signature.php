@@ -2,10 +2,14 @@
 require_once 'config.php';
 require_once 'includes/logger.php';
 require_once 'includes/SignatureManager.php';
+require_once 'includes/UserManager.php';
 
-// Initialize signature manager
+// Initialize managers
 $signatureManager = new SignatureManager($db, Logger::getInstance());
+$userManager = new UserManager($db, Logger::getInstance());
 
+// Fetch all users
+$users = $userManager->getAllUsers();
 ?>
 <!DOCTYPE html>
 <html>
@@ -18,6 +22,9 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome for icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Custom CSS -->
@@ -119,20 +126,9 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
             align-items: center;
         }
 
-        .signers input {
+        .signer-select {
             flex: 1;
-            min-width: 200px;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.2s ease;
-        }
-
-        .signers input:focus {
-            outline: none;
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            min-width: 300px;
         }
 
         .addSigner,
@@ -154,130 +150,17 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
             transform: translateY(-1px);
         }
 
-        /* İmza tipi seçimi stilleri */
-        .signature-type-selection {
-            background: #fff;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 10px;
-            border: 1px solid #e5e7eb;
+        /* Select2 customization */
+        .select2-container--bootstrap-5 .select2-selection {
+            border-color: #d1d5db;
+            min-height: 42px;
         }
 
-        .signature-type-selection p {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 1rem;
+        .select2-container--bootstrap-5 .select2-selection--single {
+            padding-top: 5px;
         }
 
-        .signature-type-selection label {
-            display: block;
-            padding: 12px;
-            margin: 8px 0;
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .signature-type-selection label:hover {
-            background: #f3f4f6;
-            border-color: #3b82f6;
-        }
-
-        .signature-type-selection input[type="radio"] {
-            margin-right: 10px;
-            transform: scale(1.2);
-        }
-
-        .tooltip {
-            color: #6b7280;
-            font-size: 0.9rem;
-            margin-left: 10px;
-            font-weight: normal;
-        }
-
-        /* İmza durumu stilleri */
-        .groups-status {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-            margin-top: 20px;
-        }
-
-        .group-status {
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e5e7eb;
-            transition: all 0.2s ease;
-        }
-
-        .group-status:hover {
-            border-color: #3b82f6;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        .group-status h4 {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #1f2937;
-            margin: 0 0 1rem 0;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #e5e7eb;
-        }
-
-        .group-status p {
-            color: #374151;
-            margin: 0.5rem 0;
-        }
-
-        .group-status ul {
-            list-style: none;
-            padding: 0;
-            margin: 1rem 0;
-        }
-
-        .group-status li {
-            padding: 12px;
-            background: #f9fafb;
-            border-radius: 6px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            color: #374151;
-        }
-
-        .group-status li:not(:last-child) {
-            margin-bottom: 8px;
-        }
-
-        .group-status li.signed {
-            background: #dcfce7;
-            color: #166534;
-        }
-
-        .group-status li.waiting {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .group-info {
-            background: #fff;
-            padding: 16px;
-            border-radius: 8px;
-            margin: 12px 0;
-            border: 1px solid #e5e7eb;
-        }
-
-        .group-info h4 {
-            color: #1f2937;
-            margin: 0 0 8px 0;
-        }
-
+        /* Status styles */
         .status-badge {
             display: inline-block;
             padding: 4px 12px;
@@ -311,20 +194,6 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
             font-size: 0.875rem;
             color: #1e40af;
         }
-
-        .form-actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-            gap: 20px;
-        }
-
-        .card-header {
-            background: #f9fafb;
-            padding: 16px;
-            border-bottom: 1px solid #e5e7eb;
-        }
     </style>
 </head>
 
@@ -339,7 +208,13 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php">
+                            <i class="fas fa-home me-1"></i>
+                            Ana Sayfa
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link" href="sign_document.php">
                             <i class="fas fa-file-signature me-1"></i>
@@ -391,18 +266,43 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                     <div class="group" data-group="1">
                         <h3>Grup 1:</h3>
                         <div class="signers">
-                            <input type="text" name="groups[1][]" placeholder="TC Kimlik No" required>
-                            <button type="button" class="addSigner">+ İmzacı Ekle</button>
+                            <select name="groups[1][]" class="form-select signer-select" required>
+                                <option value="">İmzacı Seçin</option>
+                                <?php foreach ($users as $user): ?>
+                                    <option value="<?= htmlspecialchars($user['tckn']) ?>">
+                                        <?= htmlspecialchars($user['full_name']) ?> (<?= htmlspecialchars($user['tckn']) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="button" class="addSigner">
+                                <i class="fas fa-plus me-1"></i> İmzacı Ekle
+                            </button>
                         </div>
                     </div>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="addGroup">+ Yeni Grup Ekle</button>
+                    <button type="button" class="addGroup">
+                        <i class="fas fa-layer-group me-1"></i> Yeni Grup Ekle
+                    </button>
                     <input type="submit" name="init_process" value="İmza Sürecini Başlat" class="button">
                 </div>
 
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
+                        // Initialize Select2
+                        function initSelect2(element) {
+                            $(element).select2({
+                                theme: 'bootstrap-5',
+                                width: '100%',
+                                placeholder: 'İmzacı Seçin'
+                            });
+                        }
+
+                        // Initialize existing selects
+                        document.querySelectorAll('.signer-select').forEach(select => {
+                            initSelect2(select);
+                        });
+
                         // İmza tipi seçimi değiştiğinde
                         document.querySelectorAll('input[name="signature_type"]').forEach(function(radio) {
                             radio.addEventListener('change', function(e) {
@@ -424,17 +324,29 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                             });
                         });
 
+                        // Create new select with options
+                        function createSelect(groupNum) {
+                            const select = document.createElement('select');
+                            select.name = `groups[${groupNum}][]`;
+                            select.className = 'form-select signer-select';
+                            select.required = true;
+                            
+                            // Copy options from the first select
+                            const firstSelect = document.querySelector('.signer-select');
+                            select.innerHTML = firstSelect.innerHTML;
+                            
+                            return select;
+                        }
+
                         // Yeni imzacı ekleme
                         document.addEventListener('click', function(e) {
                             if (e.target.classList.contains('addSigner')) {
                                 const group = e.target.closest('.group');
                                 const signersDiv = group.querySelector('.signers');
                                 const groupNum = group.dataset.group;
-                                const input = document.createElement('input');
-                                input.type = 'text';
-                                input.name = `groups[${groupNum}][]`;
-                                input.placeholder = 'TC Kimlik No';
-                                signersDiv.insertBefore(input, e.target);
+                                const select = createSelect(groupNum);
+                                signersDiv.insertBefore(select, e.target);
+                                initSelect2(select);
                             }
                         });
 
@@ -456,14 +368,24 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                             }
 
                             groupDiv.innerHTML = `
-                            <h3>${groupTitle}</h3>
-                            <div class="signers">
-                                <input type="text" name="groups[${newGroupNum}][]" placeholder="TC Kimlik No" required>
-                                <button type="button" class="addSigner">+ İmzacı Ekle</button>
-                            </div>
-                        `;
+                                <h3>${groupTitle}</h3>
+                                <div class="signers">
+                                    <select name="groups[${newGroupNum}][]" class="form-select signer-select" required>
+                                        <option value="">İmzacı Seçin</option>
+                                        <?php foreach ($users as $user): ?>
+                                            <option value="<?= htmlspecialchars($user['tckn']) ?>">
+                                                <?= htmlspecialchars($user['full_name']) ?> (<?= htmlspecialchars($user['tckn']) ?>)
+                                            </option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                    <button type="button" class="addSigner">
+                                        <i class="fas fa-plus me-1"></i> İmzacı Ekle
+                                    </button>
+                                </div>
+                            `;
 
                             document.querySelector('#signatureGroups').appendChild(groupDiv);
+                            initSelect2(groupDiv.querySelector('.signer-select'));
                         });
                     });
                 </script>
@@ -522,7 +444,18 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                 foreach ($signatureGroups as $index => $group) {
                     echo "<div class='group-info'>";
                     echo "<h4>Grup " . ($index + 1) . ":</h4>";
-                    echo "<p>İmzacılar: " . implode(', ', $group['signers']) . "</p>";
+                    
+                    $signerNames = [];
+                    foreach ($group['signers'] as $tckn) {
+                        foreach ($users as $user) {
+                            if ($user['tckn'] === $tckn) {
+                                $signerNames[] = $user['full_name'] . ' (' . $user['tckn'] . ')';
+                                break;
+                            }
+                        }
+                    }
+                    
+                    echo "<p>İmzacılar: " . implode(', ', $signerNames) . "</p>";
                     echo "</div>";
                 }
                 echo "</div>";
@@ -571,6 +504,15 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                     foreach ($group['signers'] as $signer) {
                         $signed = false;
                         $signatureDate = '';
+                        $signerName = '';
+
+                        // İmzacı adını bul
+                        foreach ($users as $user) {
+                            if ($user['tckn'] === $signer) {
+                                $signerName = $user['full_name'];
+                                break;
+                            }
+                        }
 
                         // İmza kontrolü
                         if (isset($groupSignatures[$groupNum])) {
@@ -594,7 +536,7 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                         }
 
                         echo "<li class='" . $class . "'>";
-                        echo "<strong>TC: " . $signer . "</strong>";
+                        echo "<strong>" . $signerName . "</strong> (TC: " . $signer . ")";
                         echo $status;
                         echo "</li>";
                     }
@@ -639,9 +581,14 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Bootstrap Bundle with Popper -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 </body>
 
 </html>

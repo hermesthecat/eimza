@@ -105,6 +105,28 @@ class SecurityHelper
     }
 
     /**
+     * CSRF token oluşturma
+     */
+    public static function generateCsrfToken()
+    {
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = self::generateToken();
+        }
+        return $_SESSION['csrf_token'];
+    }
+
+    /**
+     * CSRF token doğrulama
+     */
+    public static function validateCsrfToken($token)
+    {
+        if (!isset($_SESSION['csrf_token'])) {
+            return false;
+        }
+        return hash_equals($_SESSION['csrf_token'], $token);
+    }
+
+    /**
      * Rate limiting kontrol
      */
     public static function checkRateLimit($key, $limit, $period = 3600)
@@ -125,6 +147,17 @@ class SecurityHelper
         $_SESSION['rate_limits'][$key] = $attempts;
 
         return true;
+    }
+
+    /**
+     * Başarısız giriş denemesini kaydeder
+     */
+    public static function recordFailedLogin($username)
+    {
+        $username = self::sanitizeString($username);
+        $_SESSION['rate_limits']['login_' . $username] =
+            ($_SESSION['rate_limits']['login_' . $username] ?? []);
+        $_SESSION['rate_limits']['login_' . $username][] = time();
     }
 
     /**

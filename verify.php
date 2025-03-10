@@ -4,6 +4,16 @@ require_once 'includes/logger.php';
 require_once 'includes/SignatureManager.php';
 require_once('tcpdf/tcpdf.php');
 
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Unauthorized access'
+    ]);
+    exit;
+}
+
 class SignedPDF extends TCPDF
 {
     protected $signatureInfo = [];
@@ -105,7 +115,6 @@ try {
         'certificate_serial_number' => $signatureRecord['certificate_serial_number'],
         'signature_chain' => json_decode($signatureRecord['signature_chain'] ?? '[]', true)
     ];
-
     // Get updated signature record
     $signatureRecord = $signatureManager->getSignatureRecord($filename);
 
@@ -113,8 +122,7 @@ try {
         throw new Exception('İmza kaydı bulunamadı');
     }
 
-    // Store signature details in session for verification
-    session_start();
+    // Store signature details in session
     $_SESSION['signature_info'] = [
         'id' => $signatureRecord['id'],
         'filename' => $signatureRecord['filename'],

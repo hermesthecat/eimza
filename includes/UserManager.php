@@ -75,7 +75,7 @@ class UserManager {
     public function getUserByUsername($username) {
         try {
             $stmt = $this->db->prepare("
-                SELECT id, username, password_hash, full_name, email, role, last_login, created_at
+                SELECT id, username, password_hash, full_name, email, role, tckn, last_login, created_at
                 FROM users
                 WHERE username = :username
             ");
@@ -99,7 +99,7 @@ class UserManager {
     public function getUserById($id) {
         try {
             $stmt = $this->db->prepare("
-                SELECT id, username, password_hash, full_name, email, role, last_login, created_at
+                SELECT id, username, password_hash, full_name, email, role, tckn, last_login, created_at
                 FROM users
                 WHERE id = :id
             ");
@@ -112,6 +112,40 @@ class UserManager {
                 'id' => $id
             ]);
             return false;
+        }
+    }
+
+    /**
+     * Get all users, optionally filtered by role
+     * @param string|null $role Optional role to filter by (admin, user)
+     * @return array Array of user data or empty array on failure
+     */
+    public function getAllUsers($role = null) {
+        try {
+            $sql = "
+                SELECT id, username, full_name, email, role, tckn
+                FROM users
+                WHERE 1=1
+            ";
+            $params = [];
+
+            if ($role !== null) {
+                $sql .= " AND role = :role";
+                $params[':role'] = $role;
+            }
+
+            $sql .= " ORDER BY full_name ASC";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            $this->logger->error("Error getting all users", [
+                'error' => $e->getMessage(),
+                'role_filter' => $role
+            ]);
+            return [];
         }
     }
 

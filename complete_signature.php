@@ -3,6 +3,12 @@ require_once 'config.php';
 require_once 'includes/logger.php';
 require_once 'includes/SignatureManager.php';
 
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    die(json_encode(['error' => 'Unauthorized access']));
+}
+
 // JSON verisini al
 $jsonData = file_get_contents('php://input');
 $data = json_decode($jsonData, true);
@@ -49,13 +55,25 @@ try {
 
     $completed = $signatureManager->updateGroupSignature($data['documentId'], $signatureData);
 
+    // Log the successful signature
+    Logger::getInstance()->info('Signature completed', [
+        'user_id' => $_SESSION['user_id'],
+        'username' => $_SESSION['username'],
+        'document_id' => $data['documentId'],
+        'certificate_name' => $data['certificateName']
+    ]);
+
     echo json_encode([
         'success' => true,
         'message' => $completed ? 'İmza süreci tamamlandı' : 'İmza eklendi, diğer imzalar bekleniyor',
         'status' => $completed ? 'completed' : 'pending'
     ]);
 } catch (Exception $e) {
-    Logger::getInstance()->error('İmza tamamlama hatası: ' . $e->getMessage());
+    Logger::getInstance()->error('İmza tamamlama hatası: ' . $e->getMessage(), [
+        'user_id' => $_SESSION['user_id'],
+        'username' => $_SESSION['username'],
+        'document_id' => $data['documentId'] ?? null
+    ]);
     http_response_code(500);
     echo json_encode(['error' => $e->getMessage()]);
 }

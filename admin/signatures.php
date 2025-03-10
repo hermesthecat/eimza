@@ -2,13 +2,14 @@
 require_once '../config.php';
 require_once '../includes/logger.php';
 require_once '../includes/SignatureManager.php';
+require_once '../includes/SecurityHelper.php';
 require_once 'auth.php';
 
 // Yetkilendirme kontrolü
 requireAdmin();
 
 // Generate CSRF token for forms
-$csrf_token = generateCsrfToken();
+$csrf_token = SecurityHelper::generateCsrfToken();
 
 // Initialize signature manager
 $signatureManager = new SignatureManager($db, Logger::getInstance());
@@ -29,7 +30,7 @@ $totalPages = ceil($totalSignatures / $perPage);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>İmza Kayıtları - Admin Paneli</title>
+    <title>İmza Kayıtları - PDF İmzalama Sistemi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css" rel="stylesheet">
@@ -63,42 +64,92 @@ $totalPages = ceil($totalSignatures / $perPage);
 </head>
 
 <body class="bg-light">
+    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
-            <a class="navbar-brand" href="#"><i class="fas fa-lock me-2"></i>Admin Paneli</a>
+            <a class="navbar-brand" href="../index.php">
+                <i class="fas fa-file-signature me-2"></i>
+                PDF İmzalama Sistemi
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="signatures.php">
-                            <i class="fas fa-file-signature me-2"></i>İmzalar
+                        <a class="nav-link" href="../index.php">
+                            <i class="fas fa-home me-1"></i>
+                            Ana Sayfa
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="users.php">
-                            <i class="fas fa-users me-2"></i>Kullanıcılar
+                        <a class="nav-link" href="../sign_document.php">
+                            <i class="fas fa-file-signature me-1"></i>
+                            İmza Bekleyenler
                         </a>
                     </li>
                     <li class="nav-item">
-                        <span class="nav-link">
-                            <i class="fas fa-user me-2"></i><?= htmlspecialchars(getAdminUsername()) ?>
-                        </span>
+                        <a class="nav-link" href="../test_multi_signature.php">
+                            <i class="fas fa-users me-1"></i>
+                            Çoklu İmza
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle active" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cogs me-1"></i>
+                            Yönetim Paneli
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item active" href="signatures.php">
+                                    <i class="fas fa-file-signature me-1"></i>
+                                    İmza Kayıtları
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="users.php">
+                                    <i class="fas fa-users me-1"></i>
+                                    Kullanıcılar
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="check.php">
+                                    <i class="fas fa-tasks me-1"></i>
+                                    Sistem Kontrol
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="create_test_pdf.php">
+                                    <i class="fas fa-file-pdf me-1"></i>
+                                    Test PDF Oluştur
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
                 <ul class="navbar-nav">
-                    <li class="nav-item">
-                        <a class="nav-link" href="logout.php">
-                            <i class="fas fa-sign-out-alt me-2"></i>Çıkış
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            <?= htmlspecialchars($_SESSION['full_name']) ?>
                         </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">TCKN: <?= htmlspecialchars($_SESSION['tckn']) ?></h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="../logout.php">
+                                    <i class="fas fa-sign-out-alt me-1"></i>
+                                    Çıkış Yap
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container py-5">
+    <div class="container-fluid py-4">
         <div class="card shadow">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">
@@ -216,7 +267,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                                             <form method="POST" action="retry.php" class="d-inline">
                                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf_token) ?>">
                                                 <input type="hidden" name="id" value="<?= htmlspecialchars($signature['id']) ?>">
-                                                <button type="submit" class="btn btn-sm btn-warning">
+                                                <button type="submit" class="btn btn-sm btn-warning" title="Yeniden Dene">
                                                     <i class="fas fa-redo"></i>
                                                 </button>
                                             </form>
@@ -365,7 +416,7 @@ $totalPages = ceil($totalSignatures / $perPage);
                 'pending': 'Bekliyor',
                 'completed': 'Tamamlandı',
                 'failed': 'Başarısız'
-            } [signature.status];
+            }[signature.status];
             $('#generalStatus').text(statusText);
             $('#lastUpdate').text(new Date(signature.created_at).toLocaleString('tr-TR'));
 

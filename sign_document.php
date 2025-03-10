@@ -3,6 +3,12 @@ require_once 'config.php';
 require_once 'includes/logger.php';
 require_once 'includes/SignatureManager.php';
 
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
 // Initialize signature manager
 $signatureManager = new SignatureManager($db, Logger::getInstance());
 
@@ -10,7 +16,8 @@ $signatureManager = new SignatureManager($db, Logger::getInstance());
 if (isset($_POST['sign']) && isset($_POST['filename'])) {
     try {
         $filename = $_POST['filename'];
-        $certificateNo = $_POST['certificate_no'];
+        // Use the logged-in user's TCKN
+        $certificateNo = $_SESSION['tckn'];
 
         // Debug: İmza kaydını kontrol et
         $record = $signatureManager->getSignatureRecord($filename);
@@ -46,7 +53,7 @@ if (isset($_POST['sign']) && isset($_POST['filename'])) {
                             'y' => 10,
                             'width' => 190,
                             'height' => 50,
-                            'signatureName' => 'Elektronik İmza',
+                            'signatureName' => $_SESSION['full_name'], // Use user's full name
                             'reason' => 'Belge İmzalama',
                             'location' => 'Türkiye'
                         ]
@@ -141,7 +148,13 @@ $signatures = $signatureManager->getRecentSignatures(50);
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.php">
+                            <i class="fas fa-home me-1"></i>
+                            Ana Sayfa
+                        </a>
+                    </li>
                     <li class="nav-item">
                         <a class="nav-link active" href="sign_document.php">
                             <i class="fas fa-file-signature me-1"></i>
@@ -153,6 +166,32 @@ $signatures = $signatureManager->getRecentSignatures(50);
                             <i class="fas fa-users me-1"></i>
                             Çoklu İmza
                         </a>
+                    </li>
+                    <?php if ($_SESSION['role'] === 'admin'): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="admin/signatures.php">
+                            <i class="fas fa-cogs me-1"></i>
+                            Yönetim Paneli
+                        </a>
+                    </li>
+                    <?php endif; ?>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>
+                            <?= htmlspecialchars($_SESSION['full_name']) ?>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><h6 class="dropdown-header">TCKN: <?= htmlspecialchars($_SESSION['tckn']) ?></h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="logout.php">
+                                    <i class="fas fa-sign-out-alt me-1"></i>
+                                    Çıkış Yap
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -319,74 +358,14 @@ $signatures = $signatureManager->getRecentSignatures(50);
                                     </td>
                                     <td>
                                         <?php if ($signature['status'] === 'pending'): ?>
-                                            <button type="button"
-                                                class="btn btn-primary btn-sm"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#signModal<?= $signature['id'] ?>">
-                                                <i class="fas fa-signature me-1"></i>
-                                                İmzala
-                                            </button>
-
-                                            <!-- İmzalama Modal -->
-                                            <div class="modal fade" id="signModal<?= $signature['id'] ?>" tabindex="-1">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">
-                                                                <i class="fas fa-file-signature me-2"></i>
-                                                                Belge İmzala
-                                                            </h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <div class="mb-3">
-                                                                <strong>Belge:</strong>
-                                                                <?= htmlspecialchars($signature['original_filename']) ?>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <strong>İmza Tipi:</strong>
-                                                                <?php
-                                                                $tipAciklama = '';
-                                                                switch ($signature['signature_type']) {
-                                                                    case 'chain':
-                                                                        $tipAciklama = 'Zincir İmza (gruplar sırayla imzalar)';
-                                                                        break;
-                                                                    case 'parallel':
-                                                                        $tipAciklama = 'Paralel İmza (tüm gruplar aynı anda imzalar)';
-                                                                        break;
-                                                                    case 'mixed':
-                                                                        $tipAciklama = 'Karışık İmza (gruplar sıralı, grup içi paralel imza)';
-                                                                        break;
-                                                                }
-                                                                echo $tipAciklama;
-                                                                ?>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <strong>Mevcut Grup:</strong>
-                                                                <?= $currentGroup ?>
-                                                                <?php if ($signature['signature_type'] === 'mixed'): ?>
-                                                                    <small class="text-muted d-block">Bu gruptaki tüm imzacılar aynı anda imzalayabilir.</small>
-                                                                <?php endif; ?>
-                                                            </div>
-                                                            <form method="post">
-                                                                <input type="hidden" name="filename"
-                                                                    value="<?= htmlspecialchars($signature['filename']) ?>">
-                                                                <div class="mb-3">
-                                                                    <label for="certificate_no" class="form-label">
-                                                                        TC Kimlik No
-                                                                    </label>
-                                                                    <input type="text" class="form-control"
-                                                                        id="certificate_no" name="certificate_no" required>
-                                                                </div>
-                                                                <button type="submit" name="sign" class="btn btn-primary">
-                                                                    <i class="fas fa-signature me-1"></i>
-                                                                    İmzala
-                                                                </button>
-                                                            </form>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            <form method="post" class="d-inline">
+                                                <input type="hidden" name="filename"
+                                                    value="<?= htmlspecialchars($signature['filename']) ?>">
+                                                <button type="submit" name="sign" class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-signature me-1"></i>
+                                                    İmzala
+                                                </button>
+                                            </form>
                                         <?php else: ?>
                                             <button type="button" class="btn btn-secondary btn-sm" disabled>
                                                 <i class="fas fa-signature me-1"></i>

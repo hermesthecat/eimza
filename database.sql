@@ -45,6 +45,7 @@ CREATE TABLE users (
     username VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(255),
+    tckn VARCHAR(11) NOT NULL UNIQUE,
     email VARCHAR(255),
     role ENUM('admin', 'user') DEFAULT 'user',
     last_login DATETIME,

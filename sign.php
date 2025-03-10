@@ -4,6 +4,16 @@ require_once 'includes/logger.php';
 require_once 'includes/SignatureManager.php';
 require_once 'includes/SecurityHelper.php';
 
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Content-Type: application/json');
+    echo json_encode([
+        'success' => false,
+        'error' => 'Unauthorized access'
+    ]);
+    exit;
+}
+
 try {
     // Ensure upload directory exists
     if (!file_exists(UPLOAD_DIR)) {
@@ -71,7 +81,7 @@ try {
         'size' => $file['size']
     ];
 
-    // Prepare signature options with sanitized inputs
+    // Prepare signature options with sanitized inputs and user information
     $signatureOptions = [
         'format' => in_array($_POST['signatureFormat'] ?? 'PadesBes', ['PadesBes', 'PadesT'])
             ? $_POST['signatureFormat'] : 'PadesBes',
@@ -80,7 +90,10 @@ try {
         'width' => filter_var($_POST['width'] ?? 200, FILTER_VALIDATE_INT, ["options" => ["min_range" => 50]]) ?: 200,
         'height' => filter_var($_POST['height'] ?? 50, FILTER_VALIDATE_INT, ["options" => ["min_range" => 20]]) ?: 50,
         'location' => SecurityHelper::sanitizeString($_POST['location'] ?? 'Türkiye'),
-        'reason' => SecurityHelper::sanitizeString($_POST['reason'] ?? 'Belge İmzalama')
+        'reason' => SecurityHelper::sanitizeString($_POST['reason'] ?? 'Belge İmzalama'),
+        'user_id' => $_SESSION['user_id'],
+        'user_name' => $_SESSION['full_name'],
+        'tckn' => $_SESSION['tckn']
     ];
 
     // Create signature record in database
@@ -94,7 +107,10 @@ try {
     $fileUrl = $protocol . $host . '/uploads/' . $filename;
 
     // Log the generated URL for debugging
-    Logger::getInstance()->debug("Generated file URL: $fileUrl");
+    Logger::getInstance()->debug("Generated file URL: $fileUrl", [
+        'user_id' => $_SESSION['user_id'],
+        'username' => $_SESSION['username']
+    ]);
 
     // Prepare sign protocol URL
     $request = [
@@ -107,7 +123,7 @@ try {
                     'y' => $signatureOptions['y'],
                     'width' => $signatureOptions['width'],
                     'height' => $signatureOptions['height'],
-                    'signatureName' => 'Elektronik İmza',
+                    'signatureName' => $_SESSION['full_name'],
                     'reason' => $signatureOptions['reason'],
                     'location' => $signatureOptions['location']
                 ]
@@ -120,7 +136,13 @@ try {
     $signUrl = 'sign://?xsjson=' . base64_encode(json_encode($request));
 
     // Log successful request
-    Logger::getInstance()->info("Signature request created for file: $filename, URL: $fileUrl, IP: " . SecurityHelper::getClientIP());
+    Logger::getInstance()->info("Signature request created", [
+        'user_id' => $_SESSION['user_id'],
+        'username' => $_SESSION['username'],
+        'file' => $filename,
+        'url' => $fileUrl,
+        'ip' => SecurityHelper::getClientIP()
+    ]);
 
     // Return success response with sign URL
     header('Content-Type: application/json');
@@ -132,12 +154,13 @@ try {
     exit;
 } catch (Exception $e) {
     // Log error with details
-    Logger::getInstance()->error(sprintf(
-        'Signature error: %s, File: %s, IP: %s',
-        $e->getMessage(),
-        $file['name'] ?? 'unknown',
-        SecurityHelper::getClientIP()
-    ));
+    Logger::getInstance()->error('Signature error', [
+        'error' => $e->getMessage(),
+        'file' => $file['name'] ?? 'unknown',
+        'user_id' => $_SESSION['user_id'] ?? null,
+        'username' => $_SESSION['username'] ?? null,
+        'ip' => SecurityHelper::getClientIP()
+    ]);
 
     // Mark signature as failed if it was created
     if (isset($signatureManager) && isset($filename)) {

@@ -17,7 +17,7 @@ $userManager = new UserManager($db, Logger::getInstance());
  */
 function isAdminLoggedIn()
 {
-    return isset($_SESSION['admin']) && $_SESSION['admin'] === true && isset($_SESSION['admin_id']);
+    return isset($_SESSION['user_id']) && isset($_SESSION['role']) && $_SESSION['role'] === 'admin';
 }
 
 /**
@@ -29,23 +29,34 @@ function requireAdmin()
     
     if (!isAdminLoggedIn()) {
         // Log unauthorized access attempt
-        Logger::getInstance()->warning('Unauthorized access attempt from IP: ' . SecurityHelper::getClientIP());
-        header('Location: login.php');
+        Logger::getInstance()->warning('Unauthorized admin access attempt', [
+            'ip' => SecurityHelper::getClientIP(),
+            'user_id' => $_SESSION['user_id'] ?? null,
+            'role' => $_SESSION['role'] ?? null
+        ]);
+        
+        if (!isset($_SESSION['user_id'])) {
+            // Not logged in at all
+            header('Location: /login.php');
+        } else {
+            // Logged in but not admin
+            header('Location: /error.php?code=403');
+        }
         exit;
     }
 
     // Verify admin still exists and has admin role
-    $adminUser = $userManager->getUserById($_SESSION['admin_id']);
+    $adminUser = $userManager->getUserById($_SESSION['user_id']);
     if (!$adminUser || $adminUser['role'] !== 'admin') {
         // Log potential security issue
         Logger::getInstance()->warning('Invalid admin session detected', [
-            'userId' => $_SESSION['admin_id'],
+            'user_id' => $_SESSION['user_id'],
             'ip' => SecurityHelper::getClientIP()
         ]);
         
         // Force logout
         session_destroy();
-        header('Location: login.php');
+        header('Location: /login.php');
         exit;
     }
 }
@@ -56,8 +67,8 @@ function requireAdmin()
  */
 function getAdminUsername()
 {
-    return isset($_SESSION['admin_username']) ?
-        SecurityHelper::sanitizeString($_SESSION['admin_username']) : null;
+    return isset($_SESSION['username']) ?
+        SecurityHelper::sanitizeString($_SESSION['username']) : null;
 }
 
 /**
@@ -66,7 +77,7 @@ function getAdminUsername()
  */
 function generateCsrfToken()
 {
-    return $_SESSION['csrf_token'] = SecurityHelper::generateToken();
+    return SecurityHelper::generateCsrfToken();
 }
 
 /**
@@ -76,10 +87,7 @@ function generateCsrfToken()
  */
 function validateCsrfToken($token)
 {
-    if (!isset($_SESSION['csrf_token'])) {
-        return false;
-    }
-    return hash_equals($_SESSION['csrf_token'], $token);
+    return SecurityHelper::validateCsrfToken($token);
 }
 
 /**
@@ -98,9 +106,8 @@ function getClientIP()
  */
 function checkLoginAttempts($username)
 {
-    $username = SecurityHelper::sanitizeString($username);
     return SecurityHelper::checkRateLimit(
-        'login_' . $username,
+        'login_' . SecurityHelper::sanitizeString($username),
         LOGIN_ATTEMPTS_LIMIT,
         LOGIN_ATTEMPTS_PERIOD
     );
@@ -112,10 +119,7 @@ function checkLoginAttempts($username)
  */
 function recordFailedLogin($username)
 {
-    $username = SecurityHelper::sanitizeString($username);
-    $_SESSION['rate_limits']['login_' . $username] =
-        ($_SESSION['rate_limits']['login_' . $username] ?? []);
-    $_SESSION['rate_limits']['login_' . $username][] = time();
+    SecurityHelper::recordFailedLogin($username);
 }
 
 /**
@@ -161,13 +165,14 @@ function validateAdminCredentials($username, $password)
  */
 function logSecurityEvent($action, $details = '')
 {
-    Logger::getInstance()->warning(sprintf(
-        "Security Event - Action: %s, User: %s, IP: %s, Details: %s",
-        $action,
-        getAdminUsername() ?? 'anonymous',
-        SecurityHelper::getClientIP(),
-        $details
-    ));
+    Logger::getInstance()->warning("Security Event", [
+        'action' => $action,
+        'user_id' => $_SESSION['user_id'] ?? null,
+        'username' => $_SESSION['username'] ?? 'anonymous',
+        'role' => $_SESSION['role'] ?? null,
+        'ip' => SecurityHelper::getClientIP(),
+        'details' => $details
+    ]);
 }
 
 /**
@@ -184,25 +189,36 @@ function createInitialAdminIfNeeded()
     $adminCount = $stmt->fetchColumn();
 
     if ($adminCount === 0) {
-        // Create initial admin user
-        $initialAdminPassword = bin2hex(random_bytes(8)); // Generate a random 16-character password
-        $admin = $userManager->createUser(
-            'admin',
-            $initialAdminPassword,
-            'System Administrator',
-            'admin@example.com',
-            'admin'
-        );
-
-        if ($admin) {
-            Logger::getInstance()->info(
-                'Initial admin user created. Please change password immediately.',
-                ['username' => 'admin', 'password' => $initialAdminPassword]
+        try {
+            // Generate a random 16-character password
+            $initialAdminPassword = bin2hex(random_bytes(8));
+            
+            // Create initial admin user
+            $admin = $userManager->createUser(
+                'admin',
+                $initialAdminPassword,
+                'System Administrator',
+                'admin@example.com',
+                'admin',
+                '11111111111' // Default TCKN - should be changed immediately
             );
-            return true;
+
+            if ($admin) {
+                Logger::getInstance()->info(
+                    'Initial admin user created. Please change password immediately.',
+                    [
+                        'username' => 'admin',
+                        'password' => $initialAdminPassword,
+                        'tckn' => '11111111111'
+                    ]
+                );
+                return true;
+            }
+        } catch (Exception $e) {
+            Logger::getInstance()->error('Failed to create initial admin user', [
+                'error' => $e->getMessage()
+            ]);
         }
-        
-        Logger::getInstance()->error('Failed to create initial admin user');
         return false;
     }
 
