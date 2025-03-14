@@ -4,3 +4,7 @@ temp/*.pdf
 .roomodes
 logs/*.log
 memory-bank/
+code2prompt.bat
+output.txt
+.cursorrules
+.clinerules
