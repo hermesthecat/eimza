@@ -31,13 +31,33 @@ CREATE TABLE signatures (
     group_signatures JSON,
     group_status JSON,
     signature_type ENUM('chain', 'parallel', 'mixed') DEFAULT 'chain',
+    -- Temel indeksler
     INDEX idx_filename (filename),
     INDEX idx_certificate_serial (certificate_serial_number),
     INDEX idx_status (status),
     INDEX idx_created_at (created_at),
     INDEX idx_next_signer (next_signer),
-    INDEX idx_current_group (current_group)
+    INDEX idx_current_group (current_group),
+    
+    -- Birleşik indeksler (çoklu sorgular için optimizasyon)
+    INDEX idx_status_created_at (status, created_at),
+    INDEX idx_status_current_group (status, current_group),
+    INDEX idx_certificate_status (certificate_serial_number, status),
+    INDEX idx_filename_status (filename, status),
+    
+    -- JSON indeksleri
+    INDEX idx_signature_groups ((CAST(signature_groups AS CHAR(100)))),
+    INDEX idx_group_status ((CAST(group_status AS CHAR(100)))),
+    
+    -- İmza süreçleri için özel indeksler
+    INDEX idx_signature_deadline (signature_deadline),
+    INDEX idx_signature_type_status (signature_type, status),
+    INDEX idx_completed_signatures (completed_signatures),
+    INDEX idx_required_signatures (required_signatures)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- JSON fonksiyonları için özel indeksler
+ALTER TABLE signatures ADD INDEX idx_json_extract_current_group_signers ((JSON_EXTRACT(signature_groups, CONCAT('$[', current_group - 1, '].signers'))));
 
 -- Users tablosu
 CREATE TABLE users (
